@@ -1,0 +1,349 @@
+/* ===== Time Block Layout ===== */
+.timeblock-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ===== Priorities Section ===== */
+.priorities-section {
+    margin-bottom: 0.8rem;
+}
+
+.priorities-hint {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    margin-bottom: 0.5rem;
+}
+
+.priorities-list {
+    list-style: none;
+    margin-bottom: 0.5rem;
+}
+
+.priority-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    background: rgba(67, 97, 238, 0.04);
+    border-radius: 6px;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+    border: 1px solid rgba(67, 97, 238, 0.12);
+}
+
+.priority-number {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.priority-text {
+    flex: 1;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-remove-priority {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 0.2rem;
+    transition: var(--transition);
+}
+
+.btn-remove-priority:hover {
+    color: var(--accent);
+}
+
+.priorities-input-group {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.priorities-input-group input {
+    flex: 1;
+    min-width: 0;
+}
+
+.section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.8rem 0;
+}
+
+/* Task badge in assign modal */
+.task-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    padding: 0.1rem 0.35rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 3px;
+    font-weight: 600;
+    margin-right: 0.3rem;
+    text-transform: uppercase;
+}
+
+.task-option.is-priority {
+    border-left: 3px solid var(--primary);
+    padding-left: calc(0.6rem - 3px);
+}
+
+/* ===== To-Do Section ===== */
+.todo-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.todo-input-group {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.todo-input-group input {
+    flex: 1;
+    min-width: 0;
+}
+
+.todo-input-group select {
+    width: 72px;
+    font-size: 0.76rem;
+    padding: 0.4rem 0.3rem;
+}
+
+.todo-list {
+    list-style: none;
+}
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.6rem;
+    background: var(--bg);
+    border-radius: 6px;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+    cursor: grab;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.todo-item:hover {
+    border-color: var(--primary);
+}
+
+.todo-item.dragging {
+    opacity: 0.5;
+}
+
+.todo-item .todo-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.todo-item .todo-priority {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.todo-priority.high {
+    background: rgba(247, 37, 133, 0.1);
+    color: var(--accent);
+}
+
+.todo-priority.normal {
+    background: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+}
+
+.todo-priority.low {
+    background: rgba(108, 117, 125, 0.1);
+    color: var(--secondary);
+}
+
+.todo-item .btn-remove-todo {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 0.2rem;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.todo-item .btn-remove-todo:hover {
+    color: var(--accent);
+}
+
+/* ===== Time Block Grid ===== */
+.timeblock-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.timeblock-hint {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    margin-bottom: 0.8rem;
+}
+
+.timeblock-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.timeblock-row {
+    display: flex;
+    align-items: stretch;
+    min-height: 38px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.timeblock-time {
+    width: 52px;
+    min-width: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+}
+
+.timeblock-slot {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    background: var(--bg);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    min-height: 38px;
+    overflow: hidden;
+}
+
+.timeblock-slot:hover {
+    background: rgba(67, 97, 238, 0.04);
+    border-color: var(--primary);
+}
+
+.timeblock-slot.filled {
+    background: rgba(67, 97, 238, 0.06);
+    color: var(--text);
+    font-weight: 500;
+}
+
+.timeblock-slot.filled .slot-task {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    overflow: hidden;
+}
+
+.timeblock-slot.filled .slot-task span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.timeblock-slot .btn-remove-slot {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.timeblock-slot:hover .btn-remove-slot {
+    opacity: 1;
+}
+
+.timeblock-slot .btn-remove-slot:hover {
+    color: var(--accent);
+}
+
+/* Assign Task Modal */
+.assign-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 0.8rem;
+    animation: fadeIn 0.2s ease;
+}
+
+.assign-modal-content {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1rem;
+    width: 100%;
+    max-width: 300px;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.assign-modal-content h3 {
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+
+.assign-modal-content .task-option {
+    padding: 0.45rem 0.6rem;
+    background: var(--bg);
+    border-radius: 6px;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: var(--transition);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.assign-modal-content .task-option:hover {
+    background: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+}

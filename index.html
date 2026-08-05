@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow - Productivity Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/timer.css">
+    <link rel="stylesheet" href="css/timeblock.css">
+    <link rel="stylesheet" href="css/articles.css">
+    <link rel="stylesheet" href="css/history.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" id="main-nav">
+        <div class="nav-brand">FocusFlow</div>
+        <div class="nav-links">
+            <a href="#" class="nav-link active" data-page="timer">Timer</a>
+            <a href="#" class="nav-link" data-page="timeblock">Blocks</a>
+            <a href="#" class="nav-link" data-page="history">History</a>
+            <a href="#" class="nav-link" data-page="articles">Read</a>
+        </div>
+    </nav>
+
+    <!-- Timer Page -->
+    <main class="page active" id="page-timer">
+        <div class="timer-layout">
+            <div class="timer-main">
+                <div class="timer-card">
+                    <div class="timer-mode-tabs">
+                        <button class="mode-tab active" data-mode="work">Work</button>
+                        <button class="mode-tab" data-mode="shortBreak">Break</button>
+                        <button class="mode-tab" data-mode="longBreak">Long</button>
+                    </div>
+                    <div class="timer-display">
+                        <span id="timer-minutes">25</span>:<span id="timer-seconds">00</span>
+                    </div>
+                    <div class="timer-controls">
+                        <button class="btn btn-primary" id="btn-start">Start</button>
+                        <button class="btn btn-secondary" id="btn-pause" disabled>Pause</button>
+                        <button class="btn btn-ghost" id="btn-reset">Reset</button>
+                        <button class="btn btn-ghost btn-small" id="btn-minimize" style="display:none;" title="Minimize to overlay">&#x25BC;</button>
+                    </div>
+                    <div class="session-count">
+                        Session: <span id="session-number">1</span> / 8
+                    </div>
+                </div>
+
+                <!-- Focus Mode Controls -->
+                <div class="focus-section">
+                    <div class="focus-header">
+                        <h3>Timer Settings</h3>
+                        <button class="btn btn-ghost btn-small" id="btn-toggle-settings">&#9881;</button>
+                    </div>
+                    <div class="timer-settings" id="timer-settings" style="display:none;">
+                        <div class="settings-row">
+                            <label>Work</label>
+                            <input type="number" id="setting-work" min="1" max="120" value="25"> min
+                        </div>
+                        <div class="settings-row">
+                            <label>Break</label>
+                            <input type="number" id="setting-short-break" min="1" max="30" value="5"> min
+                        </div>
+                        <div class="settings-row">
+                            <label>Long</label>
+                            <input type="number" id="setting-long-break" min="1" max="60" value="15"> min
+                        </div>
+                        <button class="btn btn-primary btn-small" id="btn-save-settings">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Focus Mode Controls -->
+                <div class="focus-section">
+                    <div class="focus-header">
+                        <h3>Focus Mode</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="focus-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="focus-desc">Greyscale everything except your chosen window.</p>
+                    <div class="focus-window-selector" id="focus-window-selector" style="display:none;">
+                        <label for="work-window">Keep in color:</label>
+                        <select id="work-window">
+                            <option value="timer">Timer</option>
+                            <option value="notes">Distraction Log</option>
+                            <option value="quotes">Quotes</option>
+                        </select>
+                        <!-- System windows (Electron only) -->
+                        <div class="system-windows-section" id="system-windows-section" style="display:none;">
+                            <label>Or pick a system window:</label>
+                            <div class="system-windows-list" id="system-windows-list"></div>
+                            <button class="btn btn-ghost btn-small" id="btn-refresh-windows">Refresh</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distraction Log -->
+                <div class="distraction-section">
+                    <h3>Distractions</h3>
+                    <button class="btn btn-small" id="btn-add-distraction">+ Log</button>
+                    <div class="distraction-form" id="distraction-form" style="display:none;">
+                        <div class="form-group">
+                            <label for="distraction-duration">How long?</label>
+                            <input type="text" id="distraction-duration" placeholder="e.g. 5 min">
+                        </div>
+                        <div class="form-group">
+                            <label for="distraction-cause">What caused it?</label>
+                            <input type="text" id="distraction-cause" placeholder="e.g. Phone, social media">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-small" id="btn-save-distraction">Save</button>
+                            <button class="btn btn-ghost btn-small" id="btn-cancel-distraction">Cancel</button>
+                        </div>
+                    </div>
+                    <ul class="distraction-list" id="distraction-list"></ul>
+                </div>
+            </div>
+
+            <!-- Quotes Sidebar -->
+            <aside class="quotes-sidebar" id="quotes-sidebar">
+                <h4>Inspiration</h4>
+                <blockquote class="quote-display" id="quote-display">
+                    <p id="quote-text">"The secret of getting ahead is getting started."</p>
+                    <cite id="quote-source">— Highlighted from: The Power of Focus</cite>
+                </blockquote>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Time Block Page -->
+    <main class="page" id="page-timeblock">
+        <div class="timeblock-layout">
+            <!-- Priorities + To-Do List -->
+            <div class="todo-section">
+                <!-- My 5 Main Priorities -->
+                <div class="priorities-section">
+                    <h2>My 5 Priorities</h2>
+                    <p class="priorities-hint">Carry over day to day.</p>
+                    <ul class="priorities-list" id="priorities-list"></ul>
+                    <div class="priorities-input-group" id="priorities-input-group">
+                        <input type="text" id="priority-input" placeholder="Add a priority...">
+                        <button class="btn btn-primary btn-small" id="btn-add-priority">Add</button>
+                    </div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Regular To-Do List -->
+                <h2>To-Do List</h2>
+                <div class="todo-input-group">
+                    <input type="text" id="todo-input" placeholder="Add a task...">
+                    <select id="todo-priority">
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <button class="btn btn-primary btn-small" id="btn-add-todo">Add</button>
+                </div>
+                <ul class="todo-list" id="todo-list"></ul>
+            </div>
+
+            <!-- Time Blocks -->
+            <div class="timeblock-section">
+                <h2>Time Blocks</h2>
+                <p class="timeblock-hint">Click a block to assign a task.</p>
+                <div class="timeblock-grid" id="timeblock-grid"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- History Page -->
+    <main class="page" id="page-history">
+        <div class="history-layout">
+            <h2>Pomodoro History</h2>
+            <div class="history-today">
+                <span class="today-label">Today:</span>
+                <span class="today-count" id="today-count">0</span>
+                <span class="today-unit">pomodoros</span>
+            </div>
+            <div class="calendar-nav">
+                <button class="btn btn-ghost btn-small" id="btn-cal-prev">&larr;</button>
+                <span class="calendar-month" id="calendar-month"></span>
+                <button class="btn btn-ghost btn-small" id="btn-cal-next">&rarr;</button>
+            </div>
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-box level-0"></span>0</span>
+                <span class="legend-item"><span class="legend-box level-1"></span>1-2</span>
+                <span class="legend-item"><span class="legend-box level-2"></span>3-4</span>
+                <span class="legend-item"><span class="legend-box level-3"></span>5-6</span>
+                <span class="legend-item"><span class="legend-box level-4"></span>7+</span>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+            <div class="day-detail" id="day-detail" style="display:none;">
+                <div class="day-detail-header">
+                    <span class="day-detail-date" id="day-detail-date"></span>
+                    <button class="btn btn-ghost btn-small" id="btn-close-detail">&times;</button>
+                </div>
+                <div class="day-detail-counts">
+                    <div class="detail-stat">
+                        <span class="detail-stat-num" id="day-detail-pomodoros">0</span>
+                        <span class="detail-stat-label">pomodoros</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat-num distraction-num" id="day-detail-distractions">0</span>
+                        <span class="detail-stat-label">distractions</span>
+                    </div>
+                </div>
+                <ul class="day-detail-list" id="day-detail-list"></ul>
+            </div>
+            <div class="history-stats" id="history-stats"></div>
+        </div>
+    </main>
+
+    <!-- Articles Page -->
+    <main class="page" id="page-articles">
+        <div class="articles-layout">
+            <div class="articles-list" id="articles-list">
+                <h2>Articles</h2>
+                <p class="articles-hint">Read and highlight lines. They show on your timer page!</p>
+            </div>
+            <div class="article-reader" id="article-reader" style="display:none;">
+                <button class="btn btn-ghost btn-small" id="btn-back-articles">&larr; Back</button>
+                <article class="article-content" id="article-content"></article>
+                <p class="highlight-hint">Select text to highlight it.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mini Timer (shown when navigating away) -->
+    <div class="mini-timer" id="mini-timer" style="display:none;">
+        <div class="mini-timer-display">
+            <span id="mini-timer-time">25:00</span>
+        </div>
+        <div class="mini-timer-controls">
+            <button class="mini-btn" id="mini-btn-toggle">⏸</button>
+            <button class="mini-btn" id="mini-btn-goto">↗</button>
+        </div>
+    </div>
+
+    <!-- Reflection Modal -->
+    <div class="reflection-modal" id="reflection-modal" style="display:none;">
+        <div class="reflection-content">
+            <div class="reflection-header">
+                <h2>Reflect</h2>
+                <p class="reflection-subtitle">4 sessions done. Nice work!</p>
+            </div>
+            <div class="reflection-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="reflection-distraction-count">0</span>
+                    <span class="stat-label">distractions logged</span>
+                </div>
+            </div>
+            <div class="reflection-prompts">
+                <div class="form-group">
+                    <label for="reflection-going-well">What's going well?</label>
+                    <textarea id="reflection-going-well" rows="2" placeholder="I stayed focused on..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reflection-improve">What to improve?</label>
+                    <textarea id="reflection-improve" rows="2" placeholder="Next I'll try to..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reflection-energy">Energy level?</label>
+                    <div class="energy-selector">
+                        <button class="energy-btn" data-energy="low">Low</button>
+                        <button class="energy-btn" data-energy="medium">Medium</button>
+                        <button class="energy-btn active" data-energy="high">High</button>
+                    </div>
+                </div>
+            </div>
+            <div class="reflection-actions">
+                <button class="btn btn-primary" id="btn-save-reflection">Save</button>
+                <button class="btn btn-ghost" id="btn-skip-reflection">Skip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distraction Timeline Modal (end of pomodoro) -->
+    <div class="timeline-modal" id="timeline-modal" style="display:none;">
+        <div class="timeline-content">
+            <div class="timeline-header">
+                <h2>Session Distractions</h2>
+                <p class="timeline-subtitle">Tap a dot to tag it, or skip.</p>
+            </div>
+            <div class="timeline-bar" id="timeline-bar"></div>
+            <div class="timeline-tag-panel" id="timeline-tag-panel" style="display:none;">
+                <div class="tag-options">
+                    <button class="tag-btn" data-tag="phone" title="Phone">&#128241;</button>
+                    <button class="tag-btn" data-tag="people" title="People">&#128101;</button>
+                    <button class="tag-btn" data-tag="thought" title="Internal thought">&#128173;</button>
+                    <button class="tag-btn" data-tag="other" title="Other">&#10067;</button>
+                </div>
+            </div>
+            <div class="timeline-actions">
+                <button class="btn btn-primary btn-small" id="btn-timeline-done">Done</button>
+                <button class="btn btn-ghost btn-small" id="btn-timeline-skip">Skip</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/timer.js"></script>
+    <script src="js/timeblock.js"></script>
+    <script src="js/articles.js"></script>
+    <script src="js/history.js"></script>
+</body>
+</html>

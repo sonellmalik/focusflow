@@ -1,0 +1,67 @@
+{
+  "name": "focusflow",
+  "version": "1.0.0",
+  "description": "Productivity tracker with Pomodoro timer, focus mode, and time blocking",
+  "main": "main.js",
+  "author": "FocusFlow",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "node build.js",
+    "build:win": "node build.js win",
+    "build:mac": "node build.js mac"
+  },
+  "build": {
+    "appId": "com.focusflow.app",
+    "productName": "FocusFlow",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "mini.html",
+      "index.html",
+      "css/**/*",
+      "js/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "identity": null,
+      "category": "public.app-category.productivity"
+    },
+    "dmg": {
+      "title": "FocusFlow",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FocusFlow"
+    },
+    "forceCodeSigning": false
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

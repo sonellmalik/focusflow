@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            -webkit-app-region: drag;
+        }
+
+        .mini-container {
+            background: rgba(20, 20, 35, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .timer-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+        }
+
+        .timer-time.break-mode {
+            color: #4cc9f0;
+        }
+
+        .mini-controls {
+            display: flex;
+            gap: 6px;
+            -webkit-app-region: no-drag;
+        }
+
+        .mini-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .mini-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .mini-btn.distraction-btn {
+            background: rgba(247, 37, 133, 0.25);
+            font-size: 10px;
+            position: relative;
+        }
+
+        .mini-btn.distraction-btn:hover {
+            background: rgba(247, 37, 133, 0.45);
+        }
+
+        .distraction-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #f72585;
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .distraction-count.hidden {
+            display: none;
+        }
+
+        .mode-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4361ee;
+        }
+
+        .mode-dot.break {
+            background: #4cc9f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="mini-container">
+        <div class="mode-dot" id="mode-dot"></div>
+        <div class="timer-time" id="timer-time">25:00</div>
+        <div class="mini-controls">
+            <button class="mini-btn distraction-btn" id="btn-distraction" title="Log Distraction">
+                !
+                <span class="distraction-count hidden" id="distraction-count">0</span>
+            </button>
+            <button class="mini-btn" id="btn-pause" title="Pause/Resume">⏸</button>
+            <button class="mini-btn" id="btn-expand" title="Open App">↗</button>
+        </div>
+    </div>
+
+    <script>
+        const timerTime = document.getElementById('timer-time');
+        const modeDot = document.getElementById('mode-dot');
+        const btnPause = document.getElementById('btn-pause');
+        const btnExpand = document.getElementById('btn-expand');
+        const btnDistraction = document.getElementById('btn-distraction');
+        const distractionCountEl = document.getElementById('distraction-count');
+
+        let isPaused = false;
+        let localCount = 0;
+
+        // Receive time updates from main window
+        window.electronAPI.onUpdateTime((time) => {
+            timerTime.textContent = time;
+        });
+
+        // Receive mode updates
+        window.electronAPI.onUpdateMode((mode) => {
+            if (mode === 'work') {
+                modeDot.classList.remove('break');
+                timerTime.classList.remove('break-mode');
+            } else {
+                modeDot.classList.add('break');
+                timerTime.classList.add('break-mode');
+            }
+        });
+
+        // Receive distraction count sync
+        window.electronAPI.onDistractionCountUpdate((count) => {
+            localCount = count;
+            updateCountBadge();
+        });
+
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.textContent = isPaused ? '▶' : '⏸';
+            window.electronAPI.miniPauseToggle();
+        });
+
+        btnExpand.addEventListener('click', () => {
+            window.electronAPI.showMainWindow();
+        });
+
+        btnDistraction.addEventListener('click', () => {
+            localCount++;
+            updateCountBadge();
+            window.electronAPI.logDistraction();
+        });
+
+        function updateCountBadge() {
+            if (localCount > 0) {
+                distractionCountEl.textContent = localCount;
+                distractionCountEl.classList.remove('hidden');
+            } else {
+                distractionCountEl.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

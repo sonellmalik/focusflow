@@ -1,0 +1,278 @@
+/* ===== History Page ===== */
+.history-layout {
+    max-width: 100%;
+}
+
+.history-today {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.today-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.today-count {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.today-unit {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Calendar navigation */
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.calendar-month {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Legend */
+.calendar-legend {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.legend-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+/* Calendar grid */
+.calendar-day-labels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 3px;
+}
+
+.day-label {
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.calendar-cells {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+
+.cal-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: default;
+    transition: 0.15s ease;
+}
+
+.cal-cell:not(.empty):hover {
+    transform: scale(1.15);
+    z-index: 2;
+}
+
+.cal-cell .cal-day {
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.cal-cell.today {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+.cal-cell.today .cal-day {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.cal-cell.empty {
+    background: transparent;
+}
+
+/* Color levels (YAPA-2 inspired green heatmap) */
+.level-0,
+.legend-box.level-0 {
+    background: var(--border);
+}
+
+.level-1,
+.legend-box.level-1 {
+    background: #c6e48b;
+}
+
+.level-2,
+.legend-box.level-2 {
+    background: #7bc96f;
+}
+
+.level-3,
+.legend-box.level-3 {
+    background: #239a3b;
+}
+
+.level-4,
+.legend-box.level-4 {
+    background: #196127;
+}
+
+.level-1 .cal-day,
+.level-2 .cal-day {
+    color: #1a1a2e;
+}
+
+.level-3 .cal-day,
+.level-4 .cal-day {
+    color: #ffffff;
+}
+
+/* Month stats */
+.history-stats {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label-sm {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+
+/* ===== Day Detail Panel ===== */
+.day-detail {
+    margin-top: 0.8rem;
+    padding: 1rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.2s ease;
+}
+
+.day-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.day-detail-date {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.day-detail-counts {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.detail-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+}
+
+.detail-stat-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.detail-stat-num.distraction-num {
+    color: var(--accent);
+}
+
+.detail-stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.day-detail-list {
+    list-style: none;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-time {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    min-width: 55px;
+}
+
+.detail-cause {
+    flex: 1;
+    color: var(--text);
+}
+
+.no-data {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
