@@ -78,7 +78,7 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <p class="focus-desc">Greyscale everything except your chosen window.</p>
+                    <p class="focus-desc">Turns your entire PC greyscale. Only the chosen window shows color when full screen.</p>
                     <div class="focus-window-selector" id="focus-window-selector" style="display:none;">
                         <label for="work-window">Keep in color:</label>
                         <select id="work-window">
@@ -157,14 +157,18 @@
                     </select>
                     <button class="btn btn-primary btn-small" id="btn-add-todo">Add</button>
                 </div>
+                <button class="btn btn-ghost btn-small btn-add-break" id="btn-add-break">+ Scheduled Break</button>
                 <ul class="todo-list" id="todo-list"></ul>
             </div>
 
             <!-- Time Blocks -->
             <div class="timeblock-section">
-                <h2>Time Blocks</h2>
-                <p class="timeblock-hint">Click a block to assign a task.</p>
-                <div class="timeblock-grid" id="timeblock-grid"></div>
+                <div class="timeblock-header">
+                    <h2>Time Blocks</h2>
+                    <button class="btn btn-ghost btn-small" id="btn-clear-blocks">Clear All</button>
+                </div>
+                <p class="timeblock-hint">Click and drag across the timeline to select a time range, then assign a task.</p>
+                <div class="timeblock-calendar" id="timeblock-calendar"></div>
             </div>
         </div>
     </main>
@@ -248,7 +252,11 @@
             <div class="reflection-stats">
                 <div class="stat-item">
                     <span class="stat-number" id="reflection-distraction-count">0</span>
-                    <span class="stat-label">distractions logged</span>
+                    <span class="stat-label">distractions</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="reflection-pause-time">0s</span>
+                    <span class="stat-label">paused</span>
                 </div>
             </div>
             <div class="reflection-prompts">
@@ -283,6 +291,7 @@
                 <h2>Session Distractions</h2>
                 <p class="timeline-subtitle">Tap a dot to tag it, or skip.</p>
             </div>
+            <div class="timeline-pause-stats" id="timeline-pause-stats"></div>
             <div class="timeline-bar" id="timeline-bar"></div>
             <div class="timeline-tag-panel" id="timeline-tag-panel" style="display:none;">
                 <div class="tag-options">

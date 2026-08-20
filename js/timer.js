@@ -23,8 +23,50 @@ window.timerState = {
     completedWorkSessions: 0,
     sessionDistractions: 0,
     distractionTimestamps: [],
-    sessionDuration: DURATIONS.work // total duration for this work session
+    sessionDuration: DURATIONS.work,
+    // Pause tracking
+    pauseStartedAt: null,
+    totalPauseTime: 0,
+    pauseCount: 0
 };
+
+// ===== Midnight Session Reset =====
+// Reset session count at 12:00 AM each day
+(function initMidnightReset() {
+    const lastResetDate = loadData('lastSessionResetDate', null);
+    const todayStr = new Date().toDateString();
+
+    // If app opens on a new day, reset immediately
+    if (lastResetDate !== todayStr) {
+        resetDailySessions();
+    }
+
+    // Schedule reset at next midnight
+    scheduleMidnightReset();
+})();
+
+function resetDailySessions() {
+    window.timerState.session = 1;
+    window.timerState.completedWorkSessions = 0;
+    saveData('lastSessionResetDate', new Date().toDateString());
+
+    // Update display if session number element exists
+    const sn = document.getElementById('session-number');
+    if (sn) sn.textContent = '1';
+}
+
+function scheduleMidnightReset() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0); // next midnight
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+
+    setTimeout(() => {
+        resetDailySessions();
+        // Then schedule again for the following midnight
+        scheduleMidnightReset();
+    }, msUntilMidnight);
+}
 
 const timerMinutes = document.getElementById('timer-minutes');
 const timerSeconds = document.getElementById('timer-seconds');
@@ -87,8 +129,8 @@ function completeSession() {
             window.logCompletedPomodoro();
         }
 
-        // Show distraction timeline if there were any taps
-        if (window.timerState.distractionTimestamps.length > 0) {
+        // Show distraction timeline if there were distractions or pauses
+        if (window.timerState.distractionTimestamps.length > 0 || window.timerState.totalPauseTime > 0) {
             showDistractionTimeline();
             // Reflection will show after timeline is closed (if due)
         } else {
@@ -138,10 +180,20 @@ window.startTimer = function() {
     window.timerState.isRunning = true;
     window.timerState.intervalId = setInterval(tick, 1000);
 
+    // If resuming from a pause during a work session, record pause duration
+    if (window.timerState.mode === 'work' && window.timerState.pauseStartedAt) {
+        const pausedMs = Date.now() - window.timerState.pauseStartedAt;
+        window.timerState.totalPauseTime += Math.round(pausedMs / 1000);
+        window.timerState.pauseStartedAt = null;
+    }
+
     // Reset distraction timestamps when a new work session starts fresh
     if (window.timerState.mode === 'work' && window.timerState.timeLeft === DURATIONS.work) {
         window.timerState.distractionTimestamps = [];
         window.timerState.sessionDuration = DURATIONS.work;
+        window.timerState.totalPauseTime = 0;
+        window.timerState.pauseCount = 0;
+        window.timerState.pauseStartedAt = null;
     }
 
     btnStart.disabled = true;
@@ -161,6 +213,13 @@ window.pauseTimer = function() {
     window.timerState.isRunning = false;
     clearInterval(window.timerState.intervalId);
     window.timerState.intervalId = null;
+
+    // Track pause start if mid-work-session
+    if (window.timerState.mode === 'work' && window.timerState.timeLeft < DURATIONS.work && window.timerState.timeLeft > 0) {
+        window.timerState.pauseStartedAt = Date.now();
+        window.timerState.pauseCount++;
+    }
+
     btnStart.disabled = false;
     btnPause.disabled = true;
     miniTimerToggle.textContent = '▶';
@@ -175,6 +234,9 @@ function resetTimer() {
     window.pauseTimer();
     window.timerState.timeLeft = DURATIONS[window.timerState.mode];
     window.timerState.distractionTimestamps = [];
+    window.timerState.totalPauseTime = 0;
+    window.timerState.pauseCount = 0;
+    window.timerState.pauseStartedAt = null;
     btnMinimize.style.display = 'none';
     updateDisplay();
 
@@ -267,6 +329,13 @@ function showReflection() {
     // Combine logged distractions + quick distraction clicks
     const totalDistractions = distractions.length + window.timerState.sessionDistractions;
     reflectionDistractionCount.textContent = totalDistractions;
+
+    // Show pause time
+    const reflectionPauseTime = document.getElementById('reflection-pause-time');
+    reflectionPauseTime.textContent = window.timerState.totalPauseTime > 0
+        ? formatPauseTime(window.timerState.totalPauseTime)
+        : '0s';
+
     reflectionModal.style.display = 'flex';
 }
 
@@ -514,25 +583,44 @@ let activeTimelineDot = null;
 
 function showDistractionTimeline() {
     const timestamps = window.timerState.distractionTimestamps;
-    if (timestamps.length === 0) return;
+    const hasPauses = window.timerState.totalPauseTime > 0;
+
+    if (timestamps.length === 0 && !hasPauses) return;
 
     const totalDuration = window.timerState.sessionDuration;
     const totalMin = Math.round(totalDuration / 60);
 
-    // Build the timeline
-    timelineBar.innerHTML = `
-        <div class="timeline-track">
-            <div class="timeline-line"></div>
-            ${timestamps.map((t, i) => {
-                const pct = Math.min((t.elapsed / totalDuration) * 100, 100);
-                return `<div class="timeline-dot" data-index="${i}" style="left:${pct}%;" title="${formatSeconds(t.elapsed)}">
-                    <span class="dot-icon">${t.tag ? getTagIcon(t.tag) : ''}</span>
-                </div>`;
-            }).join('')}
-            <span class="timeline-start">0:00</span>
-            <span class="timeline-end">${totalMin}:00</span>
-        </div>
-    `;
+    // Show pause stats
+    const pauseStatsEl = document.getElementById('timeline-pause-stats');
+    if (hasPauses) {
+        pauseStatsEl.innerHTML = `
+            <div class="pause-summary">
+                <span class="pause-icon">⏸</span>
+                <span class="pause-text">Paused ${window.timerState.pauseCount} time${window.timerState.pauseCount > 1 ? 's' : ''} for ${formatPauseTime(window.timerState.totalPauseTime)}</span>
+            </div>
+        `;
+    } else {
+        pauseStatsEl.innerHTML = '';
+    }
+
+    // Build the timeline (only if there are dots)
+    if (timestamps.length > 0) {
+        timelineBar.innerHTML = `
+            <div class="timeline-track">
+                <div class="timeline-line"></div>
+                ${timestamps.map((t, i) => {
+                    const pct = Math.min((t.elapsed / totalDuration) * 100, 100);
+                    return `<div class="timeline-dot" data-index="${i}" style="left:${pct}%;" title="${formatSeconds(t.elapsed)}">
+                        <span class="dot-icon">${t.tag ? getTagIcon(t.tag) : ''}</span>
+                    </div>`;
+                }).join('')}
+                <span class="timeline-start">0:00</span>
+                <span class="timeline-end">${totalMin}:00</span>
+            </div>
+        `;
+    } else {
+        timelineBar.innerHTML = '<p class="no-data" style="text-align:center; margin:0.8rem 0;">No distraction taps this session.</p>';
+    }
 
     timelineModal.style.display = 'flex';
     timelineTagPanel.style.display = 'none';
@@ -554,6 +642,14 @@ function formatSeconds(s) {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function formatPauseTime(totalSecs) {
+    if (totalSecs < 60) return `${totalSecs}s`;
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    if (secs === 0) return `${mins}m`;
+    return `${mins}m ${secs}s`;
 }
 
 function getTagIcon(tag) {

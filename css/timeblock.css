@@ -31,6 +31,13 @@
     margin-bottom: 0.3rem;
     font-size: 0.8rem;
     border: 1px solid rgba(67, 97, 238, 0.12);
+    cursor: grab;
+    transition: var(--transition);
+}
+
+.priority-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
 }
 
 .priority-number {
@@ -186,6 +193,29 @@
     color: var(--secondary);
 }
 
+.todo-priority.break {
+    background: rgba(76, 201, 240, 0.15);
+    color: #2196c4;
+}
+
+/* Scheduled break button */
+.btn-add-break {
+    width: 100%;
+    margin-bottom: 0.8rem;
+    border-style: dashed;
+}
+
+/* Break item in to-do list */
+.todo-item.is-break {
+    background: rgba(76, 201, 240, 0.06);
+    border-color: rgba(76, 201, 240, 0.25);
+}
+
+.todo-item .break-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+}
+
 .todo-item .btn-remove-todo {
     background: none;
     border: none;
@@ -215,90 +245,222 @@
     margin-bottom: 0.8rem;
 }
 
-.timeblock-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.timeblock-row {
-    display: flex;
-    align-items: stretch;
-    min-height: 38px;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.timeblock-time {
-    width: 52px;
-    min-width: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-}
-
-.timeblock-slot {
-    flex: 1;
-    padding: 0.4rem 0.6rem;
-    background: var(--bg);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    font-size: 0.76rem;
-    color: var(--text-muted);
-    min-height: 38px;
-    overflow: hidden;
-}
-
-.timeblock-slot:hover {
-    background: rgba(67, 97, 238, 0.04);
-    border-color: var(--primary);
-}
-
-.timeblock-slot.filled {
-    background: rgba(67, 97, 238, 0.06);
-    color: var(--text);
-    font-weight: 500;
-}
-
-.timeblock-slot.filled .slot-task {
+/* ===== Time Block Header ===== */
+.timeblock-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+}
+
+.timeblock-header h2 {
+    margin-bottom: 0;
+}
+
+#btn-clear-blocks:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ===== Flexible Calendar (Teams-style) ===== */
+.timeblock-calendar {
+    position: relative;
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.cal-grid {
+    position: relative;
+}
+
+.cal-slot {
+    position: relative;
+    border-bottom: 1px dashed transparent;
+    padding-left: 52px;
+    cursor: crosshair;
+    box-sizing: border-box;
+}
+
+.cal-slot.hour-start {
+    border-top: 1px solid var(--border);
+}
+
+.cal-slot:first-child {
+    border-top: none;
+}
+
+.cal-slot.selecting {
+    background: rgba(67, 97, 238, 0.18);
+}
+
+/* Current-time indicator line (Teams-style) */
+.cal-now-line {
+    position: absolute;
+    left: 52px;
+    right: 0;
+    height: 0;
+    border-top: 2px solid #e63946;
+    z-index: 8;
+    pointer-events: none;
+}
+
+.cal-now-dot {
+    position: absolute;
+    left: -5px;
+    top: -5px;
+    width: 8px;
+    height: 8px;
+    background: #e63946;
+    border-radius: 50%;
+}
+
+.cal-now-label {
+    position: absolute;
+    left: -50px;
+    top: -8px;
+    width: 48px;
+    text-align: right;
+    padding-right: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #e63946;
+    background: var(--surface);
+}
+
+.cal-hour-label {
+    position: absolute;
+    left: 6px;
+    top: -1px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    pointer-events: none;
+}
+
+/* Assigned block overlay */
+.cal-block {
+    position: absolute;
+    left: 54px;
+    right: 4px;
+    background: rgba(67, 97, 238, 0.9);
+    color: white;
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.cal-block.break-block {
+    background: rgba(76, 201, 240, 0.92);
+    color: #08303f;
+}
+
+.cal-block-inner {
+    padding: 3px 6px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
     overflow: hidden;
 }
 
-.timeblock-slot.filled .slot-task span {
+.cal-block-task {
+    font-size: 0.72rem;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.timeblock-slot .btn-remove-slot {
-    background: none;
+.cal-block-time {
+    font-size: 0.6rem;
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cal-block {
+    cursor: pointer;
+}
+
+/* Action buttons (edit + remove) — hidden until block is selected */
+.cal-block-actions {
+    position: absolute;
+    top: 1px;
+    right: 3px;
+    display: none;
+    gap: 2px;
+    align-items: center;
+}
+
+.cal-block.selected {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+    z-index: 6;
+    min-height: 22px;
+    overflow: visible;
+}
+
+.cal-block.selected .cal-block-inner {
+    overflow: visible;
+}
+
+.cal-block.selected .cal-block-actions {
+    display: flex;
+}
+
+.cal-block-edit,
+.cal-block-remove {
+    background: rgba(255, 255, 255, 0.25);
     border: none;
-    color: var(--text-muted);
+    color: inherit;
     cursor: pointer;
     font-size: 0.8rem;
-    opacity: 0;
-    transition: var(--transition);
-    flex-shrink: 0;
+    line-height: 1;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
-.timeblock-slot:hover .btn-remove-slot {
-    opacity: 1;
+.cal-block-edit:hover,
+.cal-block-remove:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
-.timeblock-slot .btn-remove-slot:hover {
-    color: var(--accent);
+.cal-block-edit-input {
+    width: 100%;
+    font-size: 0.72rem;
+    color: var(--text);
+}
+
+/* Custom assign input in modal */
+.assign-custom {
+    margin: 0.6rem 0;
+}
+
+.assign-custom input {
+    width: 100%;
+}
+
+.assign-modal-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.assign-modal-actions .btn {
+    flex: 1;
+}
+
+.task-option.is-break-option {
+    border-left: 3px solid #4cc9f0;
+    padding-left: calc(0.6rem - 3px);
 }
 
 /* Assign Task Modal */
@@ -346,4 +508,105 @@
 .assign-modal-content .task-option:hover {
     background: rgba(67, 97, 238, 0.08);
     color: var(--primary);
+}
+
+
+/* ===== Edit Task ===== */
+.btn-edit-todo,
+.btn-edit-priority {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0 0.2rem;
+    transition: var(--transition);
+    flex-shrink: 0;
+    display: none; /* hidden until item is selected */
+}
+
+.btn-edit-todo:hover,
+.btn-edit-priority:hover {
+    color: var(--primary);
+}
+
+/* Show the edit pencil only when the item is selected */
+.priority-item.selected .btn-edit-priority,
+.todo-item.selected .btn-edit-todo {
+    display: inline-block;
+}
+
+/* Selected item highlight */
+.priority-item.selected,
+.todo-item.selected {
+    border-color: var(--primary);
+    background: rgba(67, 97, 238, 0.06);
+}
+
+/* Drag-over indicator for priority reordering */
+.priority-item.drag-over {
+    border-top: 2px solid var(--primary);
+}
+
+.priority-text,
+.todo-text {
+    cursor: pointer;
+}
+
+.edit-input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font);
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--primary);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.edit-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.15);
+}
+
+
+/* ===== Block Right-Click Context Menu ===== */
+.block-context-menu {
+    position: fixed;
+    z-index: 700;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+    min-width: 130px;
+    animation: fadeIn 0.12s ease;
+}
+
+.block-context-menu .ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.5rem 0.7rem;
+    font-family: var(--font);
+    font-size: 0.82rem;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 5px;
+    transition: var(--transition);
+}
+
+.block-context-menu .ctx-item:hover {
+    background: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+}
+
+.block-context-menu .ctx-item.ctx-danger:hover {
+    background: rgba(247, 37, 133, 0.08);
+    color: var(--accent);
 }

@@ -577,3 +577,28 @@
     padding: 0.25rem 0.5rem;
     line-height: 1;
 }
+
+
+/* ===== Pause Summary (in timeline modal) ===== */
+.timeline-pause-stats {
+    margin-bottom: 0.4rem;
+}
+
+.pause-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    background: rgba(108, 117, 125, 0.08);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.pause-icon {
+    font-size: 0.9rem;
+}
+
+.pause-text {
+    font-weight: 500;
+}

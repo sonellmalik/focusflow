@@ -16,6 +16,11 @@ function switchPage(pageName) {
         page.classList.toggle('active', page.id === `page-${pageName}`);
     });
 
+    // Scroll the time-block calendar to the current time when opening it
+    if (pageName === 'timeblock' && typeof window.scrollTimeBlockToNow === 'function') {
+        setTimeout(() => window.scrollTimeBlockToNow(), 0);
+    }
+
     // Show mini timer when not on timer page and timer is running
     updateMiniTimerVisibility();
 }
