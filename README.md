@@ -11,7 +11,7 @@ FocusFlow keeps your focus sessions, daily schedule, and progress in one tidy wi
 ## What you can do with it
 
 - **Stay focused** with a Pomodoro timer that shrinks into a tiny floating widget while you work.
-- **Block distractions** by turning the rest of your screen greyscale so only your work window stays in color.
+- **Block distractions** by turning your whole screen greyscale, with color returning only for the window(s) you choose to work in.
 - **Plan your day** on a flexible calendar, dragging out any time range and dropping a task onto it.
 - **Notice your patterns** by logging distractions and reviewing them later.
 - **Build momentum** with a history calendar that shows how many focus sessions you complete each day.
@@ -55,10 +55,12 @@ Everything you do stays **on your own computer** — no accounts, no cloud, no d
 - One-tap distraction button right on the widget
 - Session count resets automatically at midnight
 
-### Focus Mode
-- Turns your **entire screen greyscale** to kill visual temptation
-- Pick one window to stay in full color while everything else fades
-- Toggle it on and off from the Timer tab
+### Focus Mode  *(Windows)*
+- Turns your **entire PC greyscale** — every window, the taskbar, the desktop — to kill visual temptation
+- **Pick the window(s) you want to keep in color**, then press **Apply**. Color returns whenever one of those windows is active, and everything greys again the moment you switch away.
+- **Multi-monitor aware:** if you have more than one display, FocusFlow lets you choose one work window per screen
+- Toggle it on and off from the Timer tab; color is always restored when you turn it off or close the app
+- Uses the built-in Windows accessibility color effect, so there's nothing extra to install
 
 ### Distraction Tracking
 - Quick-tap counter on the floating widget (no forms)
@@ -102,6 +104,19 @@ Everything you do stays **on your own computer** — no accounts, no cloud, no d
 
 ---
 
+## Privacy & permissions
+
+FocusFlow is built to be light on your system and respectful of your privacy:
+
+- **Everything stays local.** Your sessions, tasks, distractions, and history live only in the app on your machine. No accounts, no cloud, no analytics.
+- **No admin rights required.** The app runs as your normal user.
+- **Focus Mode uses standard Windows features only.** The whole-screen greyscale uses the built-in Windows accessibility color effect. To decide when to bring color back, the app reads the **title of your active window** and the **list of open window titles** — titles only. It never captures, records, or reads the *contents* of your screen or other apps.
+- **Fail-safe.** If the app ever closes unexpectedly, Windows automatically restores normal color, so you can't get stuck in greyscale.
+
+Focus Mode's whole-PC greyscale is currently **Windows only**. The rest of the app works everywhere.
+
+---
+
 ## For developers
 
 Want to run or build FocusFlow yourself? You'll need [Node.js](https://nodejs.org/) 18 or newer.
@@ -131,16 +146,21 @@ Built files land in the `dist/` folder. Pushing a version tag also triggers a Gi
 
 ```
 productivity-tracker/
-├── main.js              Electron main process (windows, focus mode)
-├── preload.js           Secure bridge between main and UI
-├── index.html           App UI
-├── mini.html            Transparent floating timer
-├── build.js             Build script
+├── main.js                 Electron main process (windows, focus mode)
+├── preload.js              Secure bridge between main and UI
+├── index.html              App UI
+├── mini.html               Transparent floating timer
+├── build.js                Build script
 ├── package.json
-├── css/                 Styles (timer, calendar, history, articles)
-└── js/                  App logic (timer, time blocks, history, articles)
+├── greyscale-helper.ps1    Whole-screen greyscale (Windows Magnification API)
+├── foreground-title.ps1    Reads the active window's title
+├── list-windows.ps1        Lists open window titles (EnumWindows, titles only)
+├── css/                    Styles (timer, calendar, history, articles)
+└── js/                     App logic (timer, time blocks, history, articles)
 ```
 </details>
+
+The three `.ps1` helpers power Focus Mode on Windows using only standard `Magnification.dll` and `user32.dll` calls — no screen capture and no elevated privileges.
 
 **Built with:** Electron, plain HTML/CSS/JavaScript (no UI frameworks), electron-builder for packaging, and GitHub Actions for CI.
 

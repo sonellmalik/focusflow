@@ -78,19 +78,16 @@
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                    <p class="focus-desc">Turns your entire PC greyscale. Only the chosen window shows color when full screen.</p>
+                    <p class="focus-desc">Turns your entire PC greyscale. Color returns only when a window you pick is active.</p>
                     <div class="focus-window-selector" id="focus-window-selector" style="display:none;">
-                        <label for="work-window">Keep in color:</label>
-                        <select id="work-window">
-                            <option value="timer">Timer</option>
-                            <option value="notes">Distraction Log</option>
-                            <option value="quotes">Quotes</option>
-                        </select>
                         <!-- System windows (Electron only) -->
                         <div class="system-windows-section" id="system-windows-section" style="display:none;">
-                            <label>Or pick a system window:</label>
+                            <p class="focus-desc" id="display-hint">Pick the window(s) you want to keep in color, then press Apply.</p>
                             <div class="system-windows-list" id="system-windows-list"></div>
-                            <button class="btn btn-ghost btn-small" id="btn-refresh-windows">Refresh</button>
+                            <div class="focus-window-actions">
+                                <button class="btn btn-primary btn-small" id="btn-apply-windows">Apply</button>
+                                <button class="btn btn-ghost btn-small" id="btn-refresh-windows">Refresh list</button>
+                            </div>
                         </div>
                     </div>
                 </div>

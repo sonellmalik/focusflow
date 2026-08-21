@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Focus Mode - System Window Enumeration
     getOpenWindows: () => ipcRenderer.invoke('get-open-windows'),
-    setFocusWindow: (windowId, windowName) => ipcRenderer.send('set-focus-window', windowId, windowName),
+    getDisplayCount: () => ipcRenderer.invoke('get-display-count'),
+    setFocusWindow: (windowNames) => ipcRenderer.send('set-focus-window', windowNames),
+    updateFocusWindows: (windowNames) => ipcRenderer.send('update-focus-windows', windowNames),
     disableFocusMode: () => ipcRenderer.send('disable-focus-mode')
 });

@@ -170,6 +170,29 @@
     white-space: nowrap;
 }
 
+/* Checkmark shown on selected windows */
+.window-check {
+    flex-shrink: 0;
+    color: var(--primary);
+    font-weight: 700;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.system-window-item.selected .window-check {
+    opacity: 1;
+}
+
+/* Apply / Refresh button row */
+.focus-window-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.focus-window-actions .btn {
+    flex: 1;
+}
+
 /* ===== Distraction Section ===== */
 .distraction-section {
     background: var(--surface);

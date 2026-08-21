@@ -413,71 +413,75 @@ btnSaveSettings.addEventListener('click', () => {
 // ===== Focus Mode =====
 const focusToggle = document.getElementById('focus-toggle');
 const focusSelector = document.getElementById('focus-window-selector');
-const workWindow = document.getElementById('work-window');
 const systemWindowsSection = document.getElementById('system-windows-section');
 const systemWindowsList = document.getElementById('system-windows-list');
 const btnRefreshWindows = document.getElementById('btn-refresh-windows');
+const btnApplyWindows = document.getElementById('btn-apply-windows');
+const displayHint = document.getElementById('display-hint');
 
-focusToggle.addEventListener('change', () => {
+let displayCount = 1;              // number of connected monitors
+let selectedWindowNames = new Set(); // titles the user has picked
+
+focusToggle.addEventListener('change', async () => {
     if (focusToggle.checked) {
         document.body.classList.add('focus-mode');
         focusSelector.style.display = 'block';
-        applyFocusWindow();
 
-        // Show system windows section if in Electron
         if (isElectron) {
             systemWindowsSection.style.display = 'block';
-            loadSystemWindows();
+
+            // Detect how many displays are connected
+            try {
+                displayCount = await window.electronAPI.getDisplayCount();
+            } catch (e) {
+                displayCount = 1;
+            }
+            updateDisplayHint();
+
+            await loadSystemWindows();
+
+            // Start whole-screen greyscale immediately with no windows chosen yet.
+            selectedWindowNames.clear();
+            window.electronAPI.setFocusWindow([]);
         }
     } else {
         document.body.classList.remove('focus-mode');
         focusSelector.style.display = 'none';
-        clearFocusWindow();
 
-        // Notify Electron to remove greyscale filter
         if (isElectron) {
             window.electronAPI.disableFocusMode();
             systemWindowsSection.style.display = 'none';
+            selectedWindowNames.clear();
         }
     }
 });
-
-workWindow.addEventListener('change', applyFocusWindow);
 
 if (btnRefreshWindows) {
     btnRefreshWindows.addEventListener('click', loadSystemWindows);
 }
 
-function applyFocusWindow() {
-    clearFocusWindow();
-    const selected = workWindow.value;
-    let targetEl;
-    switch(selected) {
-        case 'timer':
-            targetEl = document.querySelector('.timer-card');
-            break;
-        case 'notes':
-            targetEl = document.querySelector('.distraction-section');
-            break;
-        case 'quotes':
-            targetEl = document.querySelector('.quotes-sidebar');
-            break;
-    }
-    if (targetEl) {
-        targetEl.classList.add('focus-active-window');
-    }
+if (btnApplyWindows) {
+    btnApplyWindows.addEventListener('click', () => {
+        if (!isElectron) return;
+        // Commit the current selection; color returns for these windows
+        window.electronAPI.updateFocusWindows(Array.from(selectedWindowNames));
+        btnApplyWindows.textContent = 'Applied ✓';
+        setTimeout(() => { btnApplyWindows.textContent = 'Apply'; }, 1500);
+    });
 }
 
-function clearFocusWindow() {
-    document.querySelectorAll('.focus-active-window').forEach(el => {
-        el.classList.remove('focus-active-window');
-    });
+function updateDisplayHint() {
+    if (!displayHint) return;
+    if (displayCount > 1) {
+        displayHint.textContent = `${displayCount} displays detected. Pick one window per screen (up to ${displayCount}), then press Apply.`;
+    } else {
+        displayHint.textContent = 'Pick the window you want to keep in color, then press Apply.';
+    }
 }
 
 // System window enumeration (Electron only)
 async function loadSystemWindows() {
     if (!isElectron) return;
-
     try {
         const windows = await window.electronAPI.getOpenWindows();
         renderSystemWindows(windows);
@@ -492,25 +496,49 @@ function renderSystemWindows(windows) {
         return;
     }
 
-    systemWindowsList.innerHTML = windows.map(win => `
-        <div class="system-window-item" data-window-id="${win.id}" data-window-name="${win.name}">
-            ${win.thumbnail ? `<img class="window-thumb" src="${win.thumbnail}" alt="${win.name}">` : ''}
-            <span class="window-name">${win.name}</span>
-        </div>
-    `).join('');
+    systemWindowsList.innerHTML = windows.map(win => {
+        const isSel = selectedWindowNames.has(win.name);
+        return `
+        <div class="system-window-item${isSel ? ' selected' : ''}" data-window-name="${escapeAttr(win.name)}">
+            <span class="window-name">${escapeHtmlText(win.name)}</span>
+            <span class="window-check">✓</span>
+        </div>`;
+    }).join('');
 
     systemWindowsList.querySelectorAll('.system-window-item').forEach(item => {
         item.addEventListener('click', () => {
-            // Deselect others
-            systemWindowsList.querySelectorAll('.system-window-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-
-            // Tell Electron to apply greyscale to everything except this window
-            if (isElectron) {
-                window.electronAPI.setFocusWindow(item.dataset.windowId, item.dataset.windowName);
+            const name = item.dataset.windowName;
+            if (selectedWindowNames.has(name)) {
+                // Toggle off
+                selectedWindowNames.delete(name);
+                item.classList.remove('selected');
+            } else {
+                // Enforce the max = number of displays
+                if (selectedWindowNames.size >= displayCount) {
+                    // If at the limit, replace the oldest selection (simple + friendly)
+                    const first = selectedWindowNames.values().next().value;
+                    selectedWindowNames.delete(first);
+                    const firstEl = systemWindowsList.querySelector(`.system-window-item[data-window-name="${cssEscape(first)}"]`);
+                    if (firstEl) firstEl.classList.remove('selected');
+                }
+                selectedWindowNames.add(name);
+                item.classList.add('selected');
             }
         });
     });
+}
+
+// Small helpers for safe rendering
+function escapeHtmlText(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+function escapeAttr(str) {
+    return String(str).replace(/"/g, '&quot;');
+}
+function cssEscape(str) {
+    return String(str).replace(/"/g, '\\"');
 }
 
 // ===== Distraction Logging =====

@@ -37,18 +37,9 @@ body {
     max-width: 100vw;
 }
 
-/* Greyscale Focus Mode */
-body.focus-mode .page.active {
-    filter: grayscale(100%);
-}
-
-body.focus-mode .page.active .focus-active-window {
-    filter: grayscale(0%) !important;
-}
-
-body.focus-mode .nav {
-    filter: grayscale(100%);
-}
+/* Focus Mode note: the greyscale effect is applied to the ENTIRE screen at the
+   OS level via the Windows Magnification API (see main.js + greyscale-helper.ps1),
+   not with a CSS filter. The FocusFlow window greys along with everything else. */
 
 /* ===== Navigation ===== */
 .nav {

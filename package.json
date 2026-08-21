@@ -22,6 +22,9 @@
       "preload.js",
       "mini.html",
       "index.html",
+      "greyscale-helper.ps1",
+      "foreground-title.ps1",
+      "list-windows.ps1",
       "css/**/*",
       "js/**/*"
     ],
