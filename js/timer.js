@@ -549,8 +549,23 @@ const btnCancelDistraction = document.getElementById('btn-cancel-distraction');
 const distractionList = document.getElementById('distraction-list');
 const distractionDuration = document.getElementById('distraction-duration');
 const distractionCause = document.getElementById('distraction-cause');
+const distractionHistory = document.getElementById('distraction-history');
+const distractionToggle = document.getElementById('distraction-toggle');
+const distractionToggleLabel = document.getElementById('distraction-toggle-label');
 
 let distractions = loadData('distractions', []);
+let distractionListExpanded = false;
+
+// Collapsible toggle for previous entries
+if (distractionToggle) {
+    distractionToggle.addEventListener('click', () => {
+        distractionListExpanded = !distractionListExpanded;
+        distractionToggle.setAttribute('aria-expanded', String(distractionListExpanded));
+        distractionToggle.classList.toggle('open', distractionListExpanded);
+        distractionList.style.display = distractionListExpanded ? 'block' : 'none';
+    });
+}
+
 renderDistractions();
 
 btnAddDistraction.addEventListener('click', () => {
@@ -569,7 +584,13 @@ btnSaveDistraction.addEventListener('click', () => {
     const cause = distractionCause.value.trim();
     if (!duration || !cause) return;
 
-    distractions.unshift({ duration, cause, time: new Date().toLocaleTimeString() });
+    const now = new Date();
+    distractions.unshift({
+        duration,
+        cause,
+        time: now.toLocaleTimeString(),
+        date: now.toLocaleDateString()
+    });
     saveData('distractions', distractions);
     renderDistractions();
     distractionForm.style.display = 'none';
@@ -589,12 +610,26 @@ btnSaveDistraction.addEventListener('click', () => {
 });
 
 function renderDistractions() {
-    distractionList.innerHTML = distractions.slice(0, 10).map(d => `
+    // Show/hide the whole collapsible section based on whether there are entries
+    if (distractionHistory) {
+        distractionHistory.style.display = distractions.length > 0 ? 'block' : 'none';
+    }
+    if (distractionToggleLabel) {
+        distractionToggleLabel.textContent = `Previous entries (${distractions.length})`;
+    }
+
+    distractionList.innerHTML = distractions.slice(0, 10).map(d => {
+        // Older entries may not have a date; show date + time when available
+        const when = d.date ? `${d.date}, ${d.time}` : (d.time || '');
+        return `
         <li>
-            <span class="distraction-duration">${d.duration}</span> at ${d.time}
+            <span class="distraction-duration">${d.duration}</span>${when ? ` at ${when}` : ''}
             <span class="distraction-cause">${d.cause}</span>
-        </li>
-    `).join('');
+        </li>`;
+    }).join('');
+
+    // Respect the current expanded/collapsed state
+    distractionList.style.display = distractionListExpanded ? 'block' : 'none';
 }
 
 // Initial display

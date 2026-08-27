@@ -255,6 +255,39 @@
     margin-top: 0.15rem;
 }
 
+/* Collapsible "Previous entries" toggle */
+.distraction-history {
+    margin-top: 0.8rem;
+}
+
+.distraction-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.4rem 0;
+    font-family: var(--font);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.distraction-toggle:hover {
+    color: var(--text);
+}
+
+.distraction-toggle-arrow {
+    transition: transform 0.2s ease;
+}
+
+.distraction-toggle.open .distraction-toggle-arrow {
+    transform: rotate(180deg);
+}
+
 /* ===== Quotes Sidebar (now below timer) ===== */
 .quotes-sidebar {
     background: var(--surface);

@@ -81,13 +81,13 @@ Everything you do stays **on your own computer** — no accounts, no cloud, no d
 - Edit or remove a block by clicking it or right-clicking for a menu
 - A live **"current time" line** and auto-scroll to now when you open the page
 - **My 5 Priorities** list that carries over day to day
-- A regular to-do list with high / normal / low priorities
-- The calendar clears each midnight for a fresh start
+- A **to-do list with tick boxes** — check a task off and it moves into a collapsible "Completed" archive (with its own scroll) that you can reopen or clear anytime
+- The calendar clears each midnight for a fresh start, and each day's schedule is **saved into your History** so you can look back on it
 
 ### History Calendar
 - Automatically logs how many focus sessions you finish each day
 - Monthly **heatmap** colored by how productive each day was
-- Click any day to see its sessions and a full distraction breakdown
+- Click any day to see its sessions, a full distraction breakdown, and the schedule you had planned
 - Monthly stats: total sessions, active days, and averages
 
 ### Productivity Articles

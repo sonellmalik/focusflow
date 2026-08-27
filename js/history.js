@@ -10,6 +10,7 @@ const dayDetailDate = document.getElementById('day-detail-date');
 const dayDetailPomodoros = document.getElementById('day-detail-pomodoros');
 const dayDetailDistractions = document.getElementById('day-detail-distractions');
 const dayDetailList = document.getElementById('day-detail-list');
+const dayDetailSchedule = document.getElementById('day-detail-schedule');
 const btnCloseDetail = document.getElementById('btn-close-detail');
 
 let calendarDate = new Date();
@@ -41,6 +42,28 @@ window.logCompletedPomodoro = function() {
     log[today] = (log[today] || 0) + 1;
     saveData('pomodoroLog', log);
     updateTodayCount();
+};
+
+// ===== Schedule (time-block) Log =====
+// Stores each day's calendar blocks, keyed by the same YYYY-MM-DD as pomodoros.
+function getScheduleLog() {
+    return loadData('scheduleLog', {});
+}
+
+// Save a day's schedule into history. `dateKey` is YYYY-MM-DD; if omitted, uses today.
+// `blocksForDay` is the array of { start, end, task, type } to archive.
+window.saveScheduleForDay = function(blocksForDay, dateKey) {
+    if (!blocksForDay || blocksForDay.length === 0) return;
+    const key = dateKey || getTodayKey();
+    const log = getScheduleLog();
+    // Store a lean copy (no ids needed for history)
+    log[key] = blocksForDay.map(b => ({
+        start: b.start,
+        end: b.end,
+        task: b.task,
+        type: b.type || 'todo'
+    }));
+    saveData('scheduleLog', log);
 };
 
 // ===== Distraction Log (per day) =====
@@ -151,7 +174,40 @@ function showDayDetail(dateKey) {
         }).join('');
     }
 
+    // Saved schedule for the day
+    const schedule = getScheduleLog()[dateKey] || [];
+    if (dayDetailSchedule) {
+        if (schedule.length === 0) {
+            dayDetailSchedule.innerHTML = '<h4 class="detail-subhead">Schedule</h4><p class="no-data">No schedule saved.</p>';
+        } else {
+            const rows = schedule
+                .slice()
+                .sort((a, b) => a.start - b.start)
+                .map(b => `
+                    <li class="detail-item">
+                        <span class="detail-time">${fmtMin(b.start)}–${fmtMin(b.end)}</span>
+                        <span class="detail-cause">${b.type === 'break' ? '☕ ' : ''}${escapeText(b.task)}</span>
+                    </li>`).join('');
+            dayDetailSchedule.innerHTML = `<h4 class="detail-subhead">Schedule</h4><ul class="day-detail-list">${rows}</ul>`;
+        }
+    }
+
     dayDetail.style.display = 'block';
+}
+
+// Format minutes-from-midnight as h:mm AM/PM
+function fmtMin(mins) {
+    let h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    let dh = h % 12; if (dh === 0) dh = 12;
+    return `${dh}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function escapeText(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
 }
 
 function getTagEmoji(tag) {

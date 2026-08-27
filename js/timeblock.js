@@ -134,20 +134,44 @@ const todoPriority = document.getElementById('todo-priority');
 const btnAddTodo = document.getElementById('btn-add-todo');
 const btnAddBreak = document.getElementById('btn-add-break');
 const todoList = document.getElementById('todo-list');
+const completedSection = document.getElementById('completed-section');
+const completedToggle = document.getElementById('completed-toggle');
+const completedToggleLabel = document.getElementById('completed-toggle-label');
+const completedList = document.getElementById('completed-list');
 
 let todos = loadData('todos', []);
 let selectedTodoIndex = null;
+let completedExpanded = false;
+
+// Collapsible toggle for completed tasks
+if (completedToggle) {
+    completedToggle.addEventListener('click', () => {
+        completedExpanded = !completedExpanded;
+        completedToggle.setAttribute('aria-expanded', String(completedExpanded));
+        completedToggle.classList.toggle('open', completedExpanded);
+        completedList.style.display = completedExpanded ? 'block' : 'none';
+    });
+}
 
 function renderTodos() {
-    todoList.innerHTML = todos.map((t, i) => {
+    // Split into active and completed, remembering each task's real index in `todos`
+    const active = [];
+    const completed = [];
+    todos.forEach((t, i) => {
+        if (t.completed) completed.push({ t, i });
+        else active.push({ t, i });
+    });
+
+    // ----- Active tasks -----
+    todoList.innerHTML = active.map(({ t, i }) => {
         const isBreak = t.type === 'break';
         return `
         <li class="todo-item${selectedTodoIndex === i ? ' selected' : ''}${isBreak ? ' is-break' : ''}" draggable="true" data-index="${i}">
+            <input type="checkbox" class="todo-check" data-index="${i}" title="Mark complete">
             ${isBreak ? '<span class="break-icon">&#9749;</span>' : ''}
             <span class="todo-text" data-index="${i}">${escapeHtml(t.text)}</span>
             <span class="todo-priority ${isBreak ? 'break' : t.priority}">${isBreak ? 'break' : t.priority}</span>
             <button class="btn-edit-todo" data-index="${i}" title="Edit">&#9998;</button>
-            <button class="btn-remove-todo" data-index="${i}" title="Delete">&times;</button>
         </li>`;
     }).join('');
 
@@ -155,7 +179,7 @@ function renderTodos() {
         const idx = parseInt(item.dataset.index);
 
         item.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-edit-todo') || e.target.closest('.btn-remove-todo')) return;
+            if (e.target.closest('.btn-edit-todo') || e.target.closest('.todo-check')) return;
             selectedTodoIndex = (selectedTodoIndex === idx) ? null : idx;
             renderTodos();
         });
@@ -170,10 +194,13 @@ function renderTodos() {
         });
     });
 
-    todoList.querySelectorAll('.btn-remove-todo').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            todos.splice(btn.dataset.index, 1);
+    // Checkbox -> mark complete (saves)
+    todoList.querySelectorAll('.todo-check').forEach(cb => {
+        cb.addEventListener('click', (e) => e.stopPropagation());
+        cb.addEventListener('change', () => {
+            const idx = parseInt(cb.dataset.index);
+            todos[idx].completed = true;
+            todos[idx].completedAt = new Date().toISOString();
             selectedTodoIndex = null;
             saveData('todos', todos);
             renderTodos();
@@ -186,6 +213,58 @@ function renderTodos() {
             startEditTodo(parseInt(btn.dataset.index));
         });
     });
+
+    // ----- Completed archive -----
+    renderCompleted(completed);
+}
+
+function renderCompleted(completed) {
+    if (!completedSection) return;
+
+    if (completed.length === 0) {
+        completedSection.style.display = 'none';
+        completedList.innerHTML = '';
+        return;
+    }
+
+    completedSection.style.display = 'block';
+    completedToggleLabel.textContent = `Completed (${completed.length})`;
+
+    // Newest completed first
+    const ordered = completed.slice().reverse();
+    completedList.innerHTML = ordered.map(({ t, i }) => {
+        const isBreak = t.type === 'break';
+        return `
+        <li class="completed-item" data-index="${i}">
+            <input type="checkbox" class="todo-check" data-index="${i}" checked title="Mark not done">
+            <span class="completed-text">${isBreak ? '&#9749; ' : ''}${escapeHtml(t.text)}</span>
+            <button class="btn-remove-completed" data-index="${i}" title="Delete">&times;</button>
+        </li>`;
+    }).join('');
+
+    // Uncheck -> move back to active (saves)
+    completedList.querySelectorAll('.todo-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const idx = parseInt(cb.dataset.index);
+            todos[idx].completed = false;
+            delete todos[idx].completedAt;
+            saveData('todos', todos);
+            renderTodos();
+        });
+    });
+
+    // Delete a completed task permanently
+    completedList.querySelectorAll('.btn-remove-completed').forEach(btn => {
+        btn.addEventListener('click', () => {
+            todos.splice(parseInt(btn.dataset.index), 1);
+            saveData('todos', todos);
+            renderTodos();
+        });
+    });
+
+    // Keep expanded/collapsed state consistent
+    completedList.style.display = completedExpanded ? 'block' : 'none';
+    completedToggle.classList.toggle('open', completedExpanded);
 }
 
 function startEditTodo(index) {
@@ -283,15 +362,37 @@ if (_blocksChanged) saveData('timeblocksV2', blocks);
 
 // ===== Midnight Calendar Reset =====
 // Clear all time blocks at 12:00 AM each day
+// Convert a Date to the YYYY-MM-DD key used by the history calendar
+function toDateKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+// Archive the current blocks into history under the given date key, then clear.
+function archiveAndClear(dateKeyForArchive) {
+    if (blocks.length > 0 && typeof window.saveScheduleForDay === 'function') {
+        window.saveScheduleForDay(blocks, dateKeyForArchive);
+    }
+    blocks = [];
+    selectedBlockId = null;
+    dragSelecting = false;
+    dragStartSlot = null;
+    dragEndSlot = null;
+    saveData('timeblocksV2', blocks);
+}
+
 (function initCalendarMidnightReset() {
     const lastClear = loadData('lastCalendarClearDate', null);
     const todayStr = new Date().toDateString();
 
-    // If the app opens on a new day, clear leftover blocks from previous days
+    // If the app opens on a new day, archive leftover blocks under the day they
+    // belonged to (the last day the calendar was active), then clear.
     if (lastClear !== todayStr) {
         if (blocks.length > 0) {
-            blocks = [];
-            saveData('timeblocksV2', blocks);
+            const archiveKey = lastClear ? toDateKey(new Date(lastClear)) : toDateKey(new Date());
+            archiveAndClear(archiveKey);
         }
         saveData('lastCalendarClearDate', todayStr);
     }
@@ -300,12 +401,11 @@ if (_blocksChanged) saveData('timeblocksV2', blocks);
 })();
 
 function clearCalendarForNewDay() {
-    blocks = [];
-    selectedBlockId = null;
-    dragSelecting = false;
-    dragStartSlot = null;
-    dragEndSlot = null;
-    saveData('timeblocksV2', blocks);
+    // The blocks belong to the day that just ended (yesterday relative to now)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    archiveAndClear(toDateKey(yesterday));
+
     saveData('lastCalendarClearDate', new Date().toDateString());
     if (typeof renderTimeBlockCalendar === 'function') {
         renderTimeBlockCalendar();
@@ -736,6 +836,15 @@ function openAssignModal(startMin, endMin) {
     document.body.appendChild(modal);
 
     const customInput = modal.querySelector('#assign-custom-input');
+
+    // Make sure interactions inside the modal never reach the calendar's
+    // global drag-select handlers (which can steal focus from the input).
+    modal.addEventListener('mousedown', (e) => e.stopPropagation());
+    if (customInput) {
+        ['mousedown', 'mouseup', 'click', 'keydown', 'keypress', 'keyup'].forEach(evt => {
+            customInput.addEventListener(evt, (e) => e.stopPropagation());
+        });
+    }
 
     function commitBlock(task, type) {
         if (!task || !task.trim()) return;
