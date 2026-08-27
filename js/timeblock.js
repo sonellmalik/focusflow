@@ -360,6 +360,13 @@ blocks.forEach(b => {
 });
 if (_blocksChanged) saveData('timeblocksV2', blocks);
 
+// Calendar interaction/selection state (declared early so functions defined
+// below — including the midnight reset that runs on load — can safely use them)
+let dragSelecting = false;
+let dragStartSlot = null;
+let dragEndSlot = null;
+let selectedBlockId = null; // which calendar block is selected (by id)
+
 // ===== Midnight Calendar Reset =====
 // Clear all time blocks at 12:00 AM each day
 // Convert a Date to the YYYY-MM-DD key used by the history calendar
@@ -426,12 +433,7 @@ function scheduleCalendarMidnightClear() {
 
 const totalSlots = ((CAL_END_HOUR - CAL_START_HOUR) * 60) / SLOT_MINUTES;
 
-let dragSelecting = false;
-let dragStartSlot = null;
-let dragEndSlot = null;
-
 // Event delegation for block edit/remove clicks (survives re-renders)
-let selectedBlockId = null; // which calendar block is selected (by id)
 
 function removeBlockById(id) {
     if (id === undefined || id === null) return;
