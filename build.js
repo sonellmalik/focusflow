@@ -54,16 +54,15 @@ const sharedConfig = {
         shortcutName: 'FocusFlow'
     },
     forceCodeSigning: false,
-    // Publish target for auto-updates. electron-builder uses this to generate
-    // the update metadata (latest.yml / latest-mac.yml) that electron-updater
-    // reads from GitHub Releases to detect newer versions.
-    publish: [
-        {
-            provider: 'github',
-            owner: 'sonellmalik',
-            repo: 'focusflow'
-        }
-    ]
+    // Auto-update feed. electron-builder uses this to generate the update
+    // metadata (latest.yml / latest-mac.yml) and to embed the feed URL in the
+    // app so electron-updater knows where to look. The GitHub provider is
+    // configured as a single object (not an array) to satisfy the config schema.
+    publish: {
+        provider: 'github',
+        owner: 'sonellmalik',
+        repo: 'focusflow'
+    }
 };
 
 let targets;
@@ -85,7 +84,12 @@ console.log(`Building for: ${platform}...`);
 
 builder.build({
     targets,
-    config: sharedConfig
+    config: sharedConfig,
+    // Generate update metadata locally but never upload from the build itself —
+    // the GitHub Actions "release" job attaches the artifacts to the release.
+    // This prevents the "artifacts will be published" path that requires GH_TOKEN
+    // and conflicts with the workflow's own release step.
+    publish: 'never'
 }).then(result => {
     console.log('\nBuild complete!');
     console.log('Output:', result);
