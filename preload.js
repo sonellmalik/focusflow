@@ -34,5 +34,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Launch at device startup
     getLaunchAtStartup: () => ipcRenderer.invoke('get-launch-at-startup'),
-    setLaunchAtStartup: (enabled) => ipcRenderer.invoke('set-launch-at-startup', enabled)
+    setLaunchAtStartup: (enabled) => ipcRenderer.invoke('set-launch-at-startup', enabled),
+
+    // Auto-update
+    checkForUpdates: () => ipcRenderer.send('check-for-updates'),
+    installUpdate: () => ipcRenderer.send('install-update'),
+    openReleasePage: () => ipcRenderer.send('open-release-page'),
+    onUpdateDownloading: (cb) => ipcRenderer.on('update-downloading', (e, info) => cb(info)),
+    onUpdateProgress: (cb) => ipcRenderer.on('update-progress', (e, info) => cb(info)),
+    onUpdateReady: (cb) => ipcRenderer.on('update-ready', (e, info) => cb(info)),
+    onUpdateAvailableManual: (cb) => ipcRenderer.on('update-available-manual', (e, info) => cb(info)),
+    onUpdateNotAvailable: (cb) => ipcRenderer.on('update-not-available', () => cb())
 });

@@ -262,6 +262,15 @@
         </div>
     </div>
 
+    <!-- Auto-update notification toast -->
+    <div class="update-toast" id="update-toast" style="display:none;">
+        <span class="update-toast-text" id="update-toast-text">A new version is available.</span>
+        <div class="update-toast-actions">
+            <button class="btn btn-primary btn-small" id="update-toast-action" style="display:none;"></button>
+            <button class="update-toast-close" id="update-toast-close" title="Dismiss" aria-label="Dismiss">&times;</button>
+        </div>
+    </div>
+
     <!-- Mini Timer (shown when navigating away) -->
     <div class="mini-timer" id="mini-timer" style="display:none;">
         <div class="mini-timer-display">
@@ -389,6 +398,57 @@
 
             // Show on launch (after the scheduler page is already visible)
             modal.style.display = 'flex';
+        })();
+
+        // ===== Auto-update notifications =====
+        // Listens for update events from the main process and shows a small
+        // toast. On Windows it downloads and offers "Restart to update"; on
+        // macOS (unsigned) it links to the Releases page instead.
+        (function initUpdateToast() {
+            if (!window.electronAPI || !window.electronAPI.onUpdateReady) return;
+
+            const toast = document.getElementById('update-toast');
+            const text = document.getElementById('update-toast-text');
+            const action = document.getElementById('update-toast-action');
+            const closeBtn = document.getElementById('update-toast-close');
+            if (!toast) return;
+
+            const show = () => { toast.style.display = 'flex'; };
+            const hide = () => { toast.style.display = 'none'; };
+
+            closeBtn.addEventListener('click', hide);
+
+            // Windows: download started
+            window.electronAPI.onUpdateDownloading((info) => {
+                text.textContent = `Downloading update ${info && info.version ? 'v' + info.version : ''}…`;
+                action.style.display = 'none';
+                show();
+            });
+
+            // Windows: download progress
+            window.electronAPI.onUpdateProgress((info) => {
+                text.textContent = `Downloading update… ${info.percent}%`;
+                action.style.display = 'none';
+                show();
+            });
+
+            // Windows: downloaded and ready to install on restart
+            window.electronAPI.onUpdateReady((info) => {
+                text.textContent = `Update ${info && info.version ? 'v' + info.version : ''} ready.`;
+                action.textContent = 'Restart to update';
+                action.style.display = 'inline-block';
+                action.onclick = () => window.electronAPI.installUpdate();
+                show();
+            });
+
+            // macOS: manual update available
+            window.electronAPI.onUpdateAvailableManual((info) => {
+                text.textContent = `Version ${info && info.version ? 'v' + info.version : ''} is available.`;
+                action.textContent = 'Download';
+                action.style.display = 'inline-block';
+                action.onclick = () => window.electronAPI.openReleasePage();
+                show();
+            });
         })();
     </script>
 </body>

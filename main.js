@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
 const path = require('path');
 const { exec, spawn } = require('child_process');
+const { autoUpdater } = require('electron-updater');
 const { DesktopSyncServer, buildSessionStarted, buildSessionStopped } = require('./js/desktop-sync-server');
 
 let mainWindow = null;
@@ -481,6 +482,7 @@ app.whenReady().then(() => {
     }
     createMainWindow();
     startSyncServer();
+    initAutoUpdater();
 });
 
 // Tiny persistence for the "has the app configured startup at least once" flag,
@@ -503,6 +505,93 @@ function store_markSeenStartupPref() {
         console.error('Failed to persist startup preference flag:', e);
     }
 }
+
+// ===== Auto-Update (electron-updater + GitHub Releases) =====
+// On launch, the packaged app checks GitHub Releases for a newer version.
+// Windows (NSIS) can download and install in-place on restart. macOS builds are
+// unsigned, so silent install isn't possible there — we instead notify the user
+// and point them to the download page. In dev (unpackaged) we skip entirely.
+let updateDownloaded = false;
+
+function sendToRenderer(channel, payload) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(channel, payload);
+    }
+}
+
+function initAutoUpdater() {
+    // Only meaningful for packaged builds; `electron .` has no update feed.
+    if (!app.isPackaged) return;
+
+    // We drive download/install from our own UI, so don't auto-download blindly.
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => {
+        // macOS is unsigned here: electron-updater can't install it, so just
+        // tell the renderer a new version exists and let it link to Releases.
+        if (process.platform === 'darwin') {
+            sendToRenderer('update-available-manual', {
+                version: info.version,
+                url: 'https://github.com/sonellmalik/focusflow/releases/latest'
+            });
+            return;
+        }
+        // Windows: start downloading in the background.
+        sendToRenderer('update-downloading', { version: info.version });
+        autoUpdater.downloadUpdate().catch((err) => {
+            console.error('Update download failed:', err);
+        });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        sendToRenderer('update-not-available');
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+        sendToRenderer('update-progress', { percent: Math.round(progress.percent) });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        updateDownloaded = true;
+        sendToRenderer('update-ready', { version: info.version });
+    });
+
+    autoUpdater.on('error', (err) => {
+        console.error('Auto-updater error:', err);
+        // Non-fatal: the app keeps running on the current version.
+    });
+
+    // Kick off a check shortly after startup so it doesn't compete with launch.
+    setTimeout(() => {
+        autoUpdater.checkForUpdates().catch((err) => {
+            console.error('Update check failed:', err);
+        });
+    }, 4000);
+}
+
+// Renderer asks to install the downloaded update now (Windows).
+ipcMain.on('install-update', () => {
+    if (updateDownloaded) {
+        autoUpdater.quitAndInstall();
+    }
+});
+
+// Renderer asks to open the Releases page (macOS manual-update fallback).
+ipcMain.on('open-release-page', () => {
+    shell.openExternal('https://github.com/sonellmalik/focusflow/releases/latest');
+});
+
+// Manual "check for updates" trigger from the UI.
+ipcMain.on('check-for-updates', () => {
+    if (!app.isPackaged) {
+        sendToRenderer('update-not-available');
+        return;
+    }
+    autoUpdater.checkForUpdates().catch((err) => {
+        console.error('Manual update check failed:', err);
+    });
+});
 
 app.on('window-all-closed', () => {
     disableFocusMode();

@@ -297,3 +297,52 @@ h4 {
     letter-spacing: 0.5px;
     margin-bottom: 0.6rem;
 }
+
+/* ===== Auto-update toast ===== */
+.update-toast {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 320px;
+    padding: 0.7rem 0.8rem 0.7rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    animation: fadeIn 0.2s ease;
+}
+
+.update-toast-text {
+    flex: 1;
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.35;
+}
+
+.update-toast-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.update-toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.1rem 0.35rem;
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.update-toast-close:hover {
+    color: var(--accent);
+    background: rgba(247, 37, 133, 0.08);
+}

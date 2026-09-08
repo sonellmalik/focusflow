@@ -43,7 +43,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FocusFlow-Windows-Installer
-          path: dist/*.exe
+          # Include the auto-update metadata (latest.yml) and blockmap so
+          # electron-updater can detect and download new versions.
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
           retention-days: 30
 
       - name: Upload macOS DMG
@@ -51,7 +56,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FocusFlow-macOS-DMG
-          path: dist/*.dmg
+          path: |
+            dist/*.dmg
+            dist/*.dmg.blockmap
+            dist/latest-mac.yml
           retention-days: 30
 
   release:
@@ -74,4 +82,8 @@ jobs:
           make_latest: true
           files: |
             artifacts/FocusFlow-Windows-Installer/*.exe
+            artifacts/FocusFlow-Windows-Installer/*.exe.blockmap
+            artifacts/FocusFlow-Windows-Installer/latest.yml
             artifacts/FocusFlow-macOS-DMG/*.dmg
+            artifacts/FocusFlow-macOS-DMG/*.dmg.blockmap
+            artifacts/FocusFlow-macOS-DMG/latest-mac.yml

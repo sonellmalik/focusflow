@@ -54,7 +54,16 @@ const sharedConfig = {
         shortcutName: 'FocusFlow'
     },
     forceCodeSigning: false,
-    publish: null
+    // Publish target for auto-updates. electron-builder uses this to generate
+    // the update metadata (latest.yml / latest-mac.yml) that electron-updater
+    // reads from GitHub Releases to detect newer versions.
+    publish: [
+        {
+            provider: 'github',
+            owner: 'sonellmalik',
+            repo: 'focusflow'
+        }
+    ]
 };
 
 let targets;
