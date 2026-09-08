@@ -3,7 +3,8 @@ const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 const miniTimer = document.getElementById('mini-timer');
 
-let currentPage = 'timer';
+// Scheduler (timeblock) is the landing page on launch
+let currentPage = 'timeblock';
 
 function switchPage(pageName) {
     currentPage = pageName;

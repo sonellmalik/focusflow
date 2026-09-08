@@ -82,6 +82,54 @@ const miniTimerToggle = document.getElementById('mini-btn-toggle');
 // Check if running inside Electron
 const isElectron = !!(window.electronAPI);
 
+// ===== iOS Focus Companion session identity =====
+// Tracks the current session so the desktop can emit sessionStarted /
+// sessionStopped to a paired phone (see main.js task 8.3). The same sessionId
+// is reused for a start/stop pair; a fresh one is minted per session start.
+window.timerState.currentSessionId = null;
+window.timerState.currentSessionStartedAt = null;
+
+function generateSessionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+    }
+    // Fallback for older runtimes: timestamp + random suffix.
+    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+// YYYY-MM-DD in local time, matching history.js getDateKey().
+function currentDateKey() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// Build the sessionStarted info payload for the current run and remember the
+// sessionId so timerStopped() can reference the same session.
+function beginSyncSession() {
+    const sessionId = generateSessionId();
+    const startedAt = new Date().toISOString();
+    window.timerState.currentSessionId = sessionId;
+    window.timerState.currentSessionStartedAt = startedAt;
+    return {
+        sessionId,
+        dateKey: currentDateKey(),
+        mode: window.timerState.mode,
+        startedAt,
+        plannedDuration: DURATIONS[window.timerState.mode]
+    };
+}
+
+// Info for sessionStopped; clears the tracked session id.
+function endSyncSession(reason) {
+    const sessionId = window.timerState.currentSessionId;
+    window.timerState.currentSessionId = null;
+    window.timerState.currentSessionStartedAt = null;
+    return { sessionId: sessionId || '', reason: reason || 'stopped' };
+}
+
 function getTimeString() {
     const mins = Math.floor(window.timerState.timeLeft / 60);
     const secs = window.timerState.timeLeft % 60;
@@ -118,7 +166,7 @@ function completeSession() {
 
     // In Electron, stop the mini overlay on session complete
     if (isElectron) {
-        window.electronAPI.timerStopped();
+        window.electronAPI.timerStopped(endSyncSession('completed'));
     }
 
     if (window.timerState.mode === 'work') {
@@ -204,7 +252,11 @@ window.startTimer = function() {
 
     // Electron: minimize main window, show mini overlay
     if (isElectron) {
-        window.electronAPI.timerStarted();
+        // Mint a fresh sync session only when starting one (not resuming a pause).
+        const sessionInfo = window.timerState.currentSessionId
+            ? null
+            : beginSyncSession();
+        window.electronAPI.timerStarted(sessionInfo);
         window.electronAPI.timerModeChanged(window.timerState.mode);
     }
 };
@@ -242,7 +294,7 @@ function resetTimer() {
 
     // Electron: bring back main window
     if (isElectron) {
-        window.electronAPI.timerStopped();
+        window.electronAPI.timerStopped(endSyncSession('stopped'));
     }
 }
 
@@ -266,7 +318,8 @@ btnReset.addEventListener('click', resetTimer);
 // Minimize to overlay button (Electron only, but works mid-pomodoro)
 btnMinimize.addEventListener('click', () => {
     if (isElectron && window.timerState.isRunning) {
-        window.electronAPI.timerStarted();
+        // Re-minimizing an already-running session: no new sync session.
+        window.electronAPI.timerStarted(null);
         window.electronAPI.timerModeChanged(window.timerState.mode);
     }
 });
@@ -409,6 +462,32 @@ btnSaveSettings.addEventListener('click', () => {
 
     timerSettingsPanel.style.display = 'none';
 });
+
+// ===== Launch at Startup toggle (Electron only) =====
+const startupSettingRow = document.getElementById('startup-setting-row');
+const settingLaunchStartup = document.getElementById('setting-launch-startup');
+
+if (isElectron && startupSettingRow && settingLaunchStartup
+    && window.electronAPI.getLaunchAtStartup) {
+    // Only meaningful in the desktop app; reveal the row and sync its state
+    startupSettingRow.style.display = 'flex';
+
+    // Reflect the current OS-level setting
+    window.electronAPI.getLaunchAtStartup()
+        .then((enabled) => { settingLaunchStartup.checked = !!enabled; })
+        .catch(() => {});
+
+    // Flip the OS setting on toggle; re-sync to the confirmed result
+    settingLaunchStartup.addEventListener('change', async () => {
+        try {
+            const confirmed = await window.electronAPI.setLaunchAtStartup(settingLaunchStartup.checked);
+            settingLaunchStartup.checked = !!confirmed;
+        } catch (e) {
+            // Revert the checkbox if the change failed
+            settingLaunchStartup.checked = !settingLaunchStartup.checked;
+        }
+    });
+}
 
 // ===== Focus Mode =====
 const focusToggle = document.getElementById('focus-toggle');

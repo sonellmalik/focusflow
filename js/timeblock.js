@@ -479,6 +479,12 @@ timeblockCalendar.addEventListener('click', (e) => {
         return;
     }
 
+    // Ignore clicks that originate on a resize handle (they belong to a resize gesture)
+    if (e.target.closest('.cal-block-resize')) {
+        e.stopPropagation();
+        return;
+    }
+
     // Click on a block body selects it (reveals edit/remove)
     const blockEl = e.target.closest('.cal-block');
     if (blockEl) {
@@ -701,6 +707,7 @@ function renderBlock(block, grid) {
     el.style.height = (height - 2) + 'px';
     el.dataset.blockId = block.id;
     el.innerHTML = `
+        <div class="cal-block-resize cal-block-resize-top" data-edge="top" title="Drag to change start time"></div>
         <div class="cal-block-inner">
             <span class="cal-block-task">${block.type === 'break' ? '&#9749; ' : ''}${escapeHtml(block.task)}</span>
             <span class="cal-block-time">${formatMinutes(block.start)} – ${formatMinutes(block.end)}</span>
@@ -709,6 +716,7 @@ function renderBlock(block, grid) {
                 <button class="cal-block-remove" data-block-id="${block.id}" title="Remove">&times;</button>
             </div>
         </div>
+        <div class="cal-block-resize cal-block-resize-bottom" data-edge="bottom" title="Drag to change end time"></div>
     `;
 
     // Prevent starting a drag-select when pressing on a block
@@ -716,7 +724,84 @@ function renderBlock(block, grid) {
         e.stopPropagation();
     });
 
+    // Teams-style resizing via the top/bottom edge handles
+    el.querySelectorAll('.cal-block-resize').forEach(handle => {
+        handle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            startBlockResize(block.id, handle.dataset.edge, e, el);
+        });
+    });
+
     grid.appendChild(el);
+}
+
+// ===== Teams-style block resizing =====
+// Drag a block's top or bottom edge to change its start/end time. Snaps to the
+// 10-minute slot grid and enforces a minimum one-slot duration.
+let resizing = false;
+
+function startBlockResize(id, edge, e, el) {
+    const block = blocks.find(b => b.id === id);
+    if (!block) return;
+
+    resizing = true;
+    selectedBlockId = id;
+
+    const gridStartMin = CAL_START_HOUR * 60;
+    const gridEndMin = CAL_END_HOUR * 60;
+    const pxPerMinute = SLOT_HEIGHT / SLOT_MINUTES;
+
+    const startY = e.clientY;
+    const origStart = block.start;
+    const origEnd = block.end;
+
+    // Snap an arbitrary minute value to the nearest slot boundary
+    const snap = (mins) => Math.round(mins / SLOT_MINUTES) * SLOT_MINUTES;
+
+    document.body.classList.add('cal-resizing');
+    el.classList.add('resizing');
+
+    const timeLabel = el.querySelector('.cal-block-time');
+
+    function onMove(ev) {
+        const deltaMin = (ev.clientY - startY) / pxPerMinute;
+
+        if (edge === 'top') {
+            let newStart = snap(origStart + deltaMin);
+            // Keep at least one slot of duration and stay within the grid
+            newStart = Math.max(gridStartMin, Math.min(newStart, origEnd - SLOT_MINUTES));
+            block.start = newStart;
+        } else {
+            let newEnd = snap(origEnd + deltaMin);
+            newEnd = Math.min(gridEndMin, Math.max(newEnd, origStart + SLOT_MINUTES));
+            block.end = newEnd;
+        }
+
+        // Live-update position/size + time label without a full re-render
+        const startSlot = (block.start - gridStartMin) / SLOT_MINUTES;
+        const endSlot = (block.end - gridStartMin) / SLOT_MINUTES;
+        el.style.top = (startSlot * SLOT_HEIGHT) + 'px';
+        el.style.height = ((endSlot - startSlot) * SLOT_HEIGHT - 2) + 'px';
+        if (timeLabel) timeLabel.textContent = `${formatMinutes(block.start)} – ${formatMinutes(block.end)}`;
+    }
+
+    function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('cal-resizing');
+        resizing = false;
+
+        // Only persist + re-render if something actually changed
+        if (block.start !== origStart || block.end !== origEnd) {
+            blocks.sort((a, b) => a.start - b.start);
+            saveData('timeblocksV2', blocks);
+        }
+        renderTimeBlockCalendar();
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
 }
 
 function startEditBlock(id) {

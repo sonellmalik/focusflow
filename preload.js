@@ -2,9 +2,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     // Timer IPC
-    timerStarted: () => ipcRenderer.send('timer-started'),
+    // sessionInfo (optional) carries { sessionId, dateKey, mode, startedAt, plannedDuration }
+    // so main.js can emit a complete sessionStarted to the paired iOS companion.
+    timerStarted: (sessionInfo) => ipcRenderer.send('timer-started', sessionInfo),
     timerPaused: () => ipcRenderer.send('timer-paused'),
-    timerStopped: () => ipcRenderer.send('timer-stopped'),
+    // sessionInfo (optional) carries { sessionId, reason } for sessionStopped.
+    timerStopped: (sessionInfo) => ipcRenderer.send('timer-stopped', sessionInfo),
     timerTick: (timeString) => ipcRenderer.send('timer-tick', timeString),
     timerModeChanged: (mode) => ipcRenderer.send('timer-mode-changed', mode),
     showMainWindow: () => ipcRenderer.send('show-main-window'),
@@ -23,5 +26,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getDisplayCount: () => ipcRenderer.invoke('get-display-count'),
     setFocusWindow: (windowNames) => ipcRenderer.send('set-focus-window', windowNames),
     updateFocusWindows: (windowNames) => ipcRenderer.send('update-focus-windows', windowNames),
-    disableFocusMode: () => ipcRenderer.send('disable-focus-mode')
+    disableFocusMode: () => ipcRenderer.send('disable-focus-mode'),
+
+    // iOS Focus Companion - phone sync
+    onPhoneDistractions: (callback) => ipcRenderer.on('phone-distractions', (event, msg) => callback(msg)),
+    getPairingQR: () => ipcRenderer.invoke('get-pairing-qr'),
+
+    // Launch at device startup
+    getLaunchAtStartup: () => ipcRenderer.invoke('get-launch-at-startup'),
+    setLaunchAtStartup: (enabled) => ipcRenderer.invoke('set-launch-at-startup', enabled)
 });

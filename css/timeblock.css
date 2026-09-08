@@ -475,6 +475,60 @@
     cursor: pointer;
 }
 
+/* ===== Teams-style resize handles ===== */
+.cal-block-resize {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7px;
+    z-index: 7;
+    cursor: ns-resize;
+}
+
+.cal-block-resize-top {
+    top: -1px;
+}
+
+.cal-block-resize-bottom {
+    bottom: -1px;
+}
+
+/* Subtle grab affordance: a small bar appears on hover / when selected */
+.cal-block-resize::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.85);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.cal-block-resize-top::after { top: 1px; }
+.cal-block-resize-bottom::after { bottom: 1px; }
+
+.cal-block:hover .cal-block-resize::after,
+.cal-block.selected .cal-block-resize::after {
+    opacity: 0.9;
+}
+
+/* While actively resizing, force the resize cursor everywhere and lift the block */
+.cal-block.resizing {
+    z-index: 10;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+}
+
+body.cal-resizing,
+body.cal-resizing * {
+    cursor: ns-resize !important;
+    user-select: none;
+}
+
 /* Action buttons (edit + remove) — hidden until block is selected */
 .cal-block-actions {
     position: absolute;
@@ -698,4 +752,71 @@
 .block-context-menu .ctx-item.ctx-danger:hover {
     background: rgba(247, 37, 133, 0.08);
     color: var(--accent);
+}
+
+/* ===== Plan-the-Day Startup Popup ===== */
+.plan-day-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 800;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+}
+
+.plan-day-content {
+    position: relative;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.6rem 1.4rem 1.3rem;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.plan-day-content h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.plan-day-subtitle {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 1.2rem;
+    line-height: 1.4;
+}
+
+.plan-day-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.plan-day-close:hover {
+    color: var(--accent);
+    background: rgba(247, 37, 133, 0.08);
+}
+
+.plan-day-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.plan-day-actions .btn {
+    flex: 1;
 }

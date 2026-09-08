@@ -15,15 +15,15 @@
     <nav class="nav" id="main-nav">
         <div class="nav-brand">FocusFlow</div>
         <div class="nav-links">
-            <a href="#" class="nav-link active" data-page="timer">Timer</a>
-            <a href="#" class="nav-link" data-page="timeblock">Scheduler</a>
+            <a href="#" class="nav-link" data-page="timer">Timer</a>
+            <a href="#" class="nav-link active" data-page="timeblock">Scheduler</a>
             <a href="#" class="nav-link" data-page="history">History</a>
             <a href="#" class="nav-link" data-page="articles">Read</a>
         </div>
     </nav>
 
     <!-- Timer Page -->
-    <main class="page active" id="page-timer">
+    <main class="page" id="page-timer">
         <div class="timer-layout">
             <div class="timer-main">
                 <div class="timer-card">
@@ -64,6 +64,13 @@
                         <div class="settings-row">
                             <label>Long</label>
                             <input type="number" id="setting-long-break" min="1" max="60" value="15"> min
+                        </div>
+                        <div class="settings-row settings-row-toggle" id="startup-setting-row" style="display:none;">
+                            <label for="setting-launch-startup">Launch at startup</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="setting-launch-startup">
+                                <span class="toggle-slider"></span>
+                            </label>
                         </div>
                         <button class="btn btn-primary btn-small" id="btn-save-settings">Apply</button>
                     </div>
@@ -131,25 +138,33 @@
         </div>
     </main>
 
-    <!-- Time Block Page -->
-    <main class="page" id="page-timeblock">
+    <!-- Time Block Page (Scheduler) -->
+    <main class="page active" id="page-timeblock">
         <div class="timeblock-layout">
-            <!-- Priorities + To-Do List -->
-            <div class="todo-section">
-                <!-- My 5 Main Priorities -->
+            <!-- My 5 Main Priorities -->
+            <div class="todo-section priorities-only">
                 <div class="priorities-section">
                     <h2>My 5 Priorities</h2>
-                    <p class="priorities-hint">Carry over day to day.</p>
                     <ul class="priorities-list" id="priorities-list"></ul>
                     <div class="priorities-input-group" id="priorities-input-group">
                         <input type="text" id="priority-input" placeholder="Add a priority...">
                         <button class="btn btn-primary btn-small" id="btn-add-priority">Add</button>
                     </div>
                 </div>
+            </div>
 
-                <hr class="section-divider">
+            <!-- Time Blocks (between priorities and to-do) -->
+            <div class="timeblock-section">
+                <div class="timeblock-header">
+                    <h2>Time Blocks</h2>
+                    <button class="btn btn-ghost btn-small" id="btn-clear-blocks">Clear All</button>
+                </div>
+                <p class="timeblock-hint">Click and drag across the timeline to select a time range, then assign a task.</p>
+                <div class="timeblock-calendar" id="timeblock-calendar"></div>
+            </div>
 
-                <!-- Regular To-Do List -->
+            <!-- Regular To-Do List -->
+            <div class="todo-section">
                 <h2>To-Do List</h2>
                 <div class="todo-input-group">
                     <input type="text" id="todo-input" placeholder="Add a task...">
@@ -171,16 +186,6 @@
                     </button>
                     <ul class="completed-list" id="completed-list" style="display:none;"></ul>
                 </div>
-            </div>
-
-            <!-- Time Blocks -->
-            <div class="timeblock-section">
-                <div class="timeblock-header">
-                    <h2>Time Blocks</h2>
-                    <button class="btn btn-ghost btn-small" id="btn-clear-blocks">Clear All</button>
-                </div>
-                <p class="timeblock-hint">Click and drag across the timeline to select a time range, then assign a task.</p>
-                <div class="timeblock-calendar" id="timeblock-calendar"></div>
             </div>
         </div>
     </main>
@@ -243,6 +248,19 @@
             </div>
         </div>
     </main>
+
+    <!-- Plan-the-Day Popup (shown on startup, dismissible) -->
+    <div class="plan-day-modal" id="plan-day-modal" style="display:none;">
+        <div class="plan-day-content">
+            <button class="plan-day-close" id="plan-day-close" title="Close" aria-label="Close">&times;</button>
+            <h2>How would you like to plan the day?</h2>
+            <p class="plan-day-subtitle">Set your priorities, block out time, and line up your to-dos.</p>
+            <div class="plan-day-actions">
+                <button class="btn btn-primary" id="plan-day-start">Let's plan</button>
+                <button class="btn btn-ghost" id="plan-day-dismiss">Maybe later</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Mini Timer (shown when navigating away) -->
     <div class="mini-timer" id="mini-timer" style="display:none;">
@@ -324,7 +342,54 @@
     <script src="js/app.js"></script>
     <script src="js/history.js"></script>
     <script src="js/timer.js"></script>
+    <script src="js/merge-phone-distractions.js"></script>
     <script src="js/timeblock.js"></script>
     <script src="js/articles.js"></script>
+    <script>
+        // Wire phone-distraction merge to the renderer (iOS Focus Companion).
+        // Subscribes to window.electronAPI.onPhoneDistractions when running in
+        // Electron; no-ops in a plain browser. loadData/saveData/renderCalendar
+        // and timerState are already defined by the scripts loaded above.
+        if (window.mergePhoneDistractionsModule) {
+            window.mergePhoneDistractionsModule.installMergePhoneDistractions(window);
+        }
+
+        // ===== Plan-the-Day startup popup =====
+        // Shown once each time the app launches. Fully dismissible via the X,
+        // the "Maybe later" button, the backdrop, or the Escape key.
+        (function initPlanDayPopup() {
+            const modal = document.getElementById('plan-day-modal');
+            if (!modal) return;
+
+            const closePopup = () => { modal.style.display = 'none'; };
+
+            const closeBtn = document.getElementById('plan-day-close');
+            const dismissBtn = document.getElementById('plan-day-dismiss');
+            const startBtn = document.getElementById('plan-day-start');
+
+            if (closeBtn) closeBtn.addEventListener('click', closePopup);
+            if (dismissBtn) dismissBtn.addEventListener('click', closePopup);
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    closePopup();
+                    const priorityInput = document.getElementById('priority-input');
+                    if (priorityInput) priorityInput.focus();
+                });
+            }
+
+            // Backdrop click dismisses
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closePopup();
+            });
+
+            // Escape key dismisses
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display !== 'none') closePopup();
+            });
+
+            // Show on launch (after the scheduler page is already visible)
+            modal.style.display = 'flex';
+        })();
+    </script>
 </body>
 </html>

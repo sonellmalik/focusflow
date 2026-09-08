@@ -1,10 +1,38 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { exec, spawn } = require('child_process');
+const { DesktopSyncServer, buildSessionStarted, buildSessionStopped } = require('./js/desktop-sync-server');
 
 let mainWindow = null;
 let miniWindow = null;
 let focusWindowPollingInterval = null;
+
+// ===== iOS Focus Companion sync server =====
+// Advertises a LAN WebSocket + Bonjour service so the iOS companion app can
+// pair, then receive session lifecycle events and push distraction batches.
+// The pure message-handling logic lives in js/desktop-sync-server.js so it
+// stays unit-testable without booting Electron.
+let syncServer = null;
+// Remembers the sessionId emitted on the last sessionStarted so a
+// timer-stopped that omits it (e.g. an older renderer) can still reference the
+// session it is ending.
+let lastSyncSessionId = null;
+
+function startSyncServer() {
+    if (syncServer) return;
+    syncServer = new DesktopSyncServer({
+        port: 0, // let the OS choose a free port; QR generation (task 9.2) reads it
+        getMainWindow: () => mainWindow
+    });
+    syncServer.start();
+}
+
+function stopSyncServer() {
+    if (syncServer) {
+        syncServer.stop();
+        syncServer = null;
+    }
+}
 
 function createMainWindow() {
     const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
@@ -236,11 +264,20 @@ function checkFocusWindowState() {
 // ===== IPC Handlers =====
 
 // Timer controls
-ipcMain.on('timer-started', () => {
+ipcMain.on('timer-started', (event, sessionInfo) => {
     if (mainWindow) {
         mainWindow.minimize();
     }
     createMiniWindow();
+
+    // Emit sessionStarted to the paired iOS companion (task 8.3). sessionInfo is
+    // only present when a fresh session begins; re-minimizing an already-running
+    // session sends null, so we skip the notification then.
+    if (syncServer && sessionInfo) {
+        const msg = buildSessionStarted(sessionInfo);
+        lastSyncSessionId = msg.sessionId;
+        syncServer.sendToPaired(msg);
+    }
 });
 
 ipcMain.on('timer-paused', () => {
@@ -286,7 +323,7 @@ ipcMain.on('log-distraction', () => {
     }
 });
 
-ipcMain.on('timer-stopped', () => {
+ipcMain.on('timer-stopped', (event, sessionInfo) => {
     sessionDistractionCount = 0;
     if (miniWindow) {
         miniWindow.close();
@@ -295,6 +332,18 @@ ipcMain.on('timer-stopped', () => {
     if (mainWindow) {
         mainWindow.restore();
         mainWindow.focus();
+    }
+
+    // Emit sessionStopped to the paired iOS companion (task 8.3). Prefer the
+    // sessionId the renderer supplies; fall back to the last started session.
+    if (syncServer && lastSyncSessionId) {
+        const info = sessionInfo && typeof sessionInfo === 'object' ? sessionInfo : {};
+        const msg = buildSessionStopped({
+            sessionId: info.sessionId || lastSyncSessionId,
+            reason: info.reason
+        });
+        syncServer.sendToPaired(msg);
+        lastSyncSessionId = null;
     }
 });
 
@@ -360,16 +409,110 @@ ipcMain.on('disable-focus-mode', () => {
     disableFocusMode();
 });
 
+// ===== iOS Focus Companion - Pairing QR =====
+// Builds a fresh one-time pairing payload {host, port, deviceId, pairingToken,
+// fingerprint} and returns it alongside a QR-code data URL. The renderer shows
+// the QR for the phone to scan, and can display host:port for manual fallback
+// when mDNS discovery is blocked (design: Requirement 4.8 / 8.3).
+ipcMain.handle('get-pairing-qr', async () => {
+    // Ensure the sync server is running so actualPort is available before we
+    // embed it in the payload.
+    startSyncServer();
+    await syncServer.whenListening();
+
+    const payload = syncServer.buildPairingPayload();
+
+    let qrDataUrl = null;
+    try {
+        const QRCode = require('qrcode');
+        qrDataUrl = await QRCode.toDataURL(JSON.stringify(payload));
+    } catch (e) {
+        console.error('Failed to generate pairing QR:', e);
+    }
+
+    // Always return the payload (even if QR rendering failed) so the renderer
+    // can fall back to displaying host:port for manual entry.
+    return { qrDataUrl, payload };
+});
+
+// ===== Launch at Device Startup =====
+// Register (or unregister) FocusFlow to open automatically when the user logs
+// in. Uses Electron's cross-platform login-item API (Windows registry / macOS
+// login items). `openAsHidden` is a no-op on Windows but keeps the launch quiet
+// on macOS. The OS itself is the source of truth for whether it's enabled.
+function setLaunchAtStartup(enabled) {
+    try {
+        app.setLoginItemSettings({
+            openAtLogin: !!enabled,
+            openAsHidden: false,
+            path: process.execPath,
+            args: []
+        });
+    } catch (e) {
+        console.error('Failed to set login item settings:', e);
+    }
+}
+
+function isLaunchAtStartupEnabled() {
+    try {
+        return app.getLoginItemSettings().openAtLogin === true;
+    } catch (e) {
+        console.error('Failed to read login item settings:', e);
+        return false;
+    }
+}
+
+// Renderer asks whether launch-at-startup is currently on (to sync the toggle)
+ipcMain.handle('get-launch-at-startup', () => isLaunchAtStartupEnabled());
+
+// Renderer flips the toggle; returns the resulting state so the UI can confirm
+ipcMain.handle('set-launch-at-startup', (event, enabled) => {
+    setLaunchAtStartup(enabled);
+    return isLaunchAtStartupEnabled();
+});
+
 // ===== App Lifecycle =====
-app.whenReady().then(createMainWindow);
+app.whenReady().then(() => {
+    // Default to enabled on first run only. If the user has already turned it
+    // off, respect that choice on subsequent launches.
+    if (!store_hasSeenStartupPref()) {
+        setLaunchAtStartup(true);
+        store_markSeenStartupPref();
+    }
+    createMainWindow();
+    startSyncServer();
+});
+
+// Tiny persistence for the "has the app configured startup at least once" flag,
+// so we only force-enable on the very first launch. Stored next to userData.
+const fs = require('fs');
+function store_prefPath() {
+    return path.join(app.getPath('userData'), 'startup-pref.json');
+}
+function store_hasSeenStartupPref() {
+    try {
+        return fs.existsSync(store_prefPath());
+    } catch (e) {
+        return false;
+    }
+}
+function store_markSeenStartupPref() {
+    try {
+        fs.writeFileSync(store_prefPath(), JSON.stringify({ initialized: true }));
+    } catch (e) {
+        console.error('Failed to persist startup preference flag:', e);
+    }
+}
 
 app.on('window-all-closed', () => {
     disableFocusMode();
+    stopSyncServer();
     app.quit();
 });
 
 app.on('before-quit', () => {
     disableFocusMode();
+    stopSyncServer();
 });
 
 app.on('activate', () => {

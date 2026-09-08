@@ -628,6 +628,19 @@
     border-color: var(--primary);
 }
 
+/* Toggle-style settings row (e.g. Launch at startup): full-width label, toggle on the right */
+.settings-row-toggle {
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border);
+}
+
+.settings-row-toggle label:first-child {
+    width: auto;
+    flex: 1;
+}
+
 #btn-toggle-settings {
     font-size: 0.9rem;
     padding: 0.25rem 0.5rem;
