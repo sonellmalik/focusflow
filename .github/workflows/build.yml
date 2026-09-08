@@ -70,7 +70,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
+          make_latest: true
           files: |
             artifacts/FocusFlow-Windows-Installer/*.exe
             artifacts/FocusFlow-macOS-DMG/*.dmg
